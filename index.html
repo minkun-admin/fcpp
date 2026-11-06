@@ -1030,8 +1030,11 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   }
   async function doLogout() { try { await S.auth.signOut(); toast("로그아웃했어요"); } catch (e) { toast("로그아웃하지 못했어요"); } }
   function syncAuthUi() {
-    $("#loginBtn").hidden = !S.readOnly;
+    var adm = false;
+    try { if (/login/.test(location.hash)) localStorage.setItem("fcpp-admin", "1"); adm = localStorage.getItem("fcpp-admin") === "1"; } catch (e) { adm = /login/.test(location.hash); }
+    $("#loginBtn").hidden = !(S.readOnly && adm);
     $("#logoutBtn").hidden = S.readOnly;
+    if (S.readOnly && /login/.test(location.hash) && !S.loginAsked) { S.loginAsked = true; openLogin(); }
     var mh = $("#matchesHint");
     if (mh) mh.textContent = S.readOnly ? "최근 경기부터 보여줘요. 🥅 승·패 명단과 MOM(👑)·칭찬(👍)을 확인할 수 있어요." : "최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.";
   }
