@@ -472,7 +472,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
       <button class="btn primary" type="button" data-act="admin-save">저장</button>
     </div>
 
-    <div class="sect-head" id="shareHead"><h2>카톡으로 공유</h2><p>저장한 뒤 복사 버튼을 누르고 단톡방에 붙여 넣으면 돼요. 가장 최근 경기 결과와 승점 TOP 5가 들어가요.</p></div>
+    <div class="sect-head" id="shareHead"><h2>카톡으로 공유</h2><p>저장한 뒤 복사 버튼을 누르고 단톡방에 붙여 넣으면 돼요. 가장 최근 경기 결과와 승점 TOP 7가 들어가요.</p></div>
     <div class="panel-box">
       <pre class="sharebox" id="sharePreview"></pre>
       <div class="btnrow"><button class="btn primary" type="button" data-act="share-copy">카톡 공유 글 복사</button></div>
@@ -982,12 +982,12 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     var c = compute(), last = c.ms[c.ms.length - 1];
     if (!last) return "";
     var sm = matchSummary(last), medals = ["🥇", "🥈", "🥉"];
-    var top = c.rows.slice(0, 5).map(function (r, i) {
+    var top = c.rows.slice(0, 7).map(function (r, i) {
       return (r.rank <= 3 ? medals[r.rank - 1] : String(r.rank)) + " " + r.name + " " + fmtN(r.pts) + "점";
     });
     return "⚽ " + (S.rules.name || DEFAULT_RULES.name) + " " + fmtDate(last.date) + " 결과\n" +
       sm.line + " · " + sm.att + "명 참석\n\n" +
-      "🏆 승점 순위 TOP 5\n" + top.join("\n") + "\n\n" +
+      "🏆 승점 순위 TOP 7\n" + top.join("\n") + "\n\n" +
       "📱 전체 기록 보기\n" + siteUrl();
   }
   function syncShare() {
