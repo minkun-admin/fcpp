@@ -400,6 +400,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .ci { width: 1.3em; height: 1.3em; fill: #FFC21A; stroke: #C98A00; stroke-width: 0.9; stroke-linejoin: round; vertical-align: -0.28em; }
 .thumb .ci { width: 1.45em; height: 1.45em; vertical-align: 0; margin: 0 -0.12em; }
 .vwin .ci { width: 1.2em; height: 1.2em; }
+.tab { position: relative; }
+.tbadge { position: absolute; top: -5px; right: -3px; min-width: 1.15rem; height: 1.15rem; padding: 0 0.2rem; box-sizing: border-box; display: inline-grid; place-items: center; border-radius: 99px; font-size: 0.75rem; font-weight: 800; line-height: 1; color: #fff; border: 2px solid var(--bg, #fff); }
+.tbadge.q { background: #E07A00; }
+.tbadge.e { background: #D6372B; }
 .vsub .thumb { font-size: 1em; margin-left: 0; }
 .vopt .ti { vertical-align: -0.15em; }
 .tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -1250,7 +1254,24 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n" + lines.join("\n") + prLine + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
   }
 
+  function tabBadge() {
+    var el = document.getElementById("tab-vote"); if (!el) return;
+    var b = el.querySelector(".tbadge"), p = curPoll(), ch = "", cls = "";
+    if (p && S.vote.pollsLoaded !== false) {
+      if (pollOpen(p)) { ch = "?"; cls = "q"; }
+      else {
+        var seen = ""; try { seen = localStorage.getItem("fcpp-vote-seen") || ""; } catch (e) {}
+        if (S.tab === "vote") { try { localStorage.setItem("fcpp-vote-seen", p.id); } catch (e) {} }
+        else if (seen !== p.id) { ch = "!"; cls = "e"; }
+      }
+    }
+    if (!ch) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "tbadge"; b.setAttribute("aria-hidden", "true"); el.appendChild(b); }
+    b.textContent = ch; b.className = "tbadge " + cls;
+    el.setAttribute("aria-label", "MOM투표" + (cls === "q" ? " (진행 중)" : " (결과가 나왔어요)"));
+  }
   function renderVote() {
+    tabBadge();
     var box = $("#voteBody"); if (!box) return;
     var st = S.vote, cu = S.auth && S.auth.currentUser;
     var cuid = cu ? cu.uid : "";
@@ -1318,7 +1339,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!res.total) { box.innerHTML = head + '<div class="empty"><b>투표한 사람이 없었어요</b></div>'; return; }
     var rows = resultRows(p, res), max = rows[0].n;
     var winners = rows.filter(function (r) { return r.n === max; }).map(function (r) { return esc(r.name); });
-    var out = '<div class="vwin"><span>' + (winners.length > 1 ? "공동 MOM" : "MOM") + "</span><b>👑 " + winners.join(" · ") + "</b><small>" + max + "표</small></div>";
+    var out = '<div class="vwin"><span>' + (winners.length > 1 ? "공동 Man Of the Match" : "Man Of the Match") + "</span><b>" + crownIcon() + " " + winners.join(" · ") + "</b><small>" + max + "표</small></div>";
     out += '<div class="vlist">' + rows.map(function (r) {
       var pct = Math.round(r.n / res.total * 100);
       return '<div class="vres' + (r.n === max ? " vtop" : "") + '"><span class="vn">' + esc(r.name) + '</span><span class="vc">' + r.n + '표</span><div class="vbar"><i style="width:' + pct + '%"></i></div></div>';
@@ -1435,7 +1456,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     toast((await copyText(t)) ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
   }
   setInterval(function () {
-    if (S.tab === "vote") renderVote(); else if (S.tab === "rank") renderRank();
+    if (S.tab === "vote") renderVote(); else { tabBadge(); if (S.tab === "rank") renderRank(); }
   }, 30000);
 
   /* ---------- toast & errors ---------- */
