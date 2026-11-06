@@ -153,6 +153,7 @@ button { cursor: pointer; }
 .top-in { position: relative; padding-block: 1.1rem 1.2rem; }
 .top-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .eyebrow { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+.top { cursor: pointer; }
 .homeLink { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tagline { margin: 0.45rem 0 0; font-size: 0.9rem; opacity: 0.85; }
 h1 { margin: 0.1rem 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.05; letter-spacing: 0.01em; }
@@ -1657,7 +1658,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       if (tb.dataset.team) S.sheet.teams[id] = tb.dataset.team; else delete S.sheet.teams[id];
       syncSheet(); return;
     }
-    var btn = t.closest("[data-act]"); if (!btn) return;
+    var btn = t.closest("[data-act]") || (t.closest("header.top") ? { dataset: { act: "home" } } : null); if (!btn) return;
     var act = btn.dataset.act;
     if (act === "tab") setTab(btn.dataset.tab);
     else if (act === "home") { if (S.tab !== "matches") setTab("matches"); else window.scrollTo({ top: 0, behavior: "smooth" }); }
