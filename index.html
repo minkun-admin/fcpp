@@ -370,6 +370,12 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .top-user { margin-top: 0.4rem; font-size: 0.78rem; opacity: 0.8; }
 #loginOv .sheet-b input[type="email"], #loginOv .sheet-b input[type="password"] { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
 .errline { margin: 0; color: var(--loss); font-size: 0.85rem; }
+.vsub { margin: 1rem 0 0; font-size: 0.95rem; }
+.vsub small { font-weight: 400; color: var(--muted); font-size: 0.8rem; margin-left: 0.3rem; }
+.vopt.vpr[aria-pressed="true"] { background: var(--teamA-bg); color: var(--teamA-ink); border-color: var(--teamA); }
+.vchips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 0.8rem; }
+.vchip { padding: 0.3rem 0.65rem; border-radius: 99px; background: var(--teamA-bg); color: var(--teamA-ink); font-weight: 700; font-size: 0.9rem; }
+.thumb { font-size: 0.72em; font-weight: 700; white-space: nowrap; }
 .tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .tabs-in::-webkit-scrollbar { display: none; }
 .tabs-in { gap: 0.2rem; padding-top: 0.55rem; padding-bottom: 0.55rem; padding-left: 8px; padding-right: 8px; }
@@ -447,7 +453,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   </section>
 
   <section id="panel-vote" role="tabpanel" aria-labelledby="tab-vote" hidden>
-    <div class="sect-head"><h2>MOM 투표</h2><p>경기가 끝나면 그날 참석한 멤버 중에서 가장 빛난 선수를 익명으로 뽑아요.</p></div>
+    <div class="sect-head"><h2>MOM 투표</h2><p>경기가 끝나면 그날 참석한 멤버 중에서 MOM과 칭찬하고 싶은 사람을 익명으로 뽑아요.</p></div>
     <div id="voteBody"></div>
     <div class="edit-only" id="voteAdmin"></div>
   </section>
@@ -626,11 +632,11 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     return '<div class="side ' + t + (m.result === t ? " won" : "") + '"><span class="tag">' + TEAM[t] + '</span><span class="names">' +
       (names.length ? names.join(" · ") : "—") + "</span></div>";
   }
-  function outSidesHtml(m) {
+  function outSidesHtml(m, thumbs) {
     function side(k, label) {
       var names = S.members.filter(function (x) { return m.outcomes[x.id] === k; }).sort(byName).map(function (x) {
         var t = m.teams && m.teams[x.id];
-        return (t === "A" || t === "B" ? '<i class="dot ' + t + '" title="' + TEAM[t] + '"></i>' : "") + esc(x.name);
+        return (t === "A" || t === "B" ? '<i class="dot ' + t + '" title="' + TEAM[t] + '"></i>' : "") + esc(x.name) + (thumbs ? thumbHtml(m.date, x.id) : "");
       });
       return '<div class="side ' + k + (k === "W" ? " won" : "") + '"><span class="tag">' + label + '</span><span class="names">' +
         (names.length ? names.join(" · ") : "—") + "</span></div>";
@@ -639,7 +645,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var hasD = has("D");
     return (has("W") || !hasD ? side("W", "승") : "") + (hasD ? side("D", "무") : "") + (has("L") || !hasD ? side("L", "패") : "");
   }
-  function sidesHtml(m) { return m.outcomes ? outSidesHtml(m) : sideHtml(m, "A") + sideHtml(m, "B"); }
+  function sidesHtml(m, thumbs) { return m.outcomes ? outSidesHtml(m, thumbs) : sideHtml(m, "A") + sideHtml(m, "B"); }
   function badgeHtml(m) {
     if (m.outcomes) {
       var w = 0, d = 0, l = 0;
@@ -710,7 +716,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }
       return '<article class="match"><div class="match-top"><div><b class="md">' + fmtDate(m.date) + "</b>" +
         '<span class="sub">' + cnt + '</span></div><button class="btn small edit-only" type="button" data-act="edit" data-id="' + esc(m.id) + '">수정</button></div><div class="sides">' +
-        sidesHtml(m) + "</div></article>";
+        sidesHtml(m, true) + "</div></article>";
     }).join("") + "</div>";
   }
 
@@ -826,7 +832,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           }).join("") + "</ol>" : '<p class="rec-empty">아직 함께 이긴 팀원이 없어요.</p>') + "</div>";
       }
       return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
-        '</span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="sub">' + sub + '</span></span><span class="minis">' + minis +
+        '</span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="sub">' + sub + thumbTotalHtml(r.id) + '</span></span><span class="minis">' + minis +
         '</span></summary><div class="rec-body">' + body + "</div></details>";
     }).join("") + "</div>";
   }
@@ -1050,7 +1056,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   /* ---------- MOM 투표 (익명, 기기당 1표, 마감 후 결과 공개) ---------- */
   var VOTE_HOURS = 48;
   S.polls = [];
-  S.vote = { pick: "", armed: false, busy: false, pollsLoaded: false, adminDate: "",
+  S.vote = { pick: "", praise: [], armed: false, busy: false, pollsLoaded: false, adminDate: "",
     mine: {}, mineLast: {}, mineErr: {}, res: {}, resLast: {}, resErr: {} };
 
   function tms(v) { return v && typeof v.toMillis === "function" ? v.toMillis() : Number(v) || 0; }
@@ -1098,10 +1104,23 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     try {
       var u = await ensureUser();
       var snap = await S.db.doc("polls/" + p.id + "/ballots/" + u.uid).get();
-      st.mine[p.id] = snap.exists ? ((snap.data() || {}).choice || "?") : "";
+      var bd = snap.exists ? (snap.data() || {}) : null;
+      st.mine[p.id] = bd ? { choice: bd.choice || "?", praise: Array.isArray(bd.praise) ? bd.praise : [] } : "";
       delete st.mineErr[p.id];
     } catch (e) { st.mineErr[p.id] = (e && e.code) || "net"; }
     st.mineBusy = false; renderVote(); renderRank();
+  }
+  function resKey(p) { return p.id + ":" + (p.createdAt || 0); }
+  function readCache() { try { return JSON.parse(localStorage.getItem("fcpp-res-v1") || "{}") || {}; } catch (e) { return {}; } }
+  function writeCache(c) { try { localStorage.setItem("fcpp-res-v1", JSON.stringify(c)); } catch (e) {} }
+  function resOf(pollId) {
+    var st = S.vote;
+    if (st.res[pollId]) return st.res[pollId];
+    var p = S.polls.filter(function (x) { return x.id === pollId; })[0];
+    if (!p || pollOpen(p)) return null;
+    var c = readCache()[resKey(p)];
+    if (c) { st.res[pollId] = c; return c; }
+    return null;
   }
   async function loadResults(p) {
     var st = S.vote;
@@ -1109,14 +1128,43 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     st.resBusy = true; st.resLast[p.id] = Date.now();
     try {
       var snap = await S.db.collection("polls/" + p.id + "/ballots").get();
-      var counts = {}, total = 0;
+      var counts = {}, praise = {}, total = 0;
       snap.docs.forEach(function (d) {
-        var c = (d.data() || {}).choice;
-        if (c && p.candidates.indexOf(c) >= 0) { counts[c] = (counts[c] || 0) + 1; total++; }
+        var v = d.data() || {}, c = v.choice;
+        if (c && p.candidates.indexOf(c) >= 0) {
+          counts[c] = (counts[c] || 0) + 1; total++;
+          var seen = {};
+          (Array.isArray(v.praise) ? v.praise : []).slice(0, 3).forEach(function (id) {
+            if (id !== c && !seen[id] && p.candidates.indexOf(id) >= 0) { seen[id] = 1; praise[id] = (praise[id] || 0) + 1; }
+          });
+        }
       });
-      st.res[p.id] = { counts: counts, total: total }; delete st.resErr[p.id];
+      var res = { counts: counts, praise: praise, total: total };
+      st.res[p.id] = res; delete st.resErr[p.id];
+      var c2 = readCache(); c2[resKey(p)] = res; writeCache(c2);
     } catch (e) { st.resErr[p.id] = (e && e.code) || "net"; }
-    st.resBusy = false; renderVote();
+    st.resBusy = false; renderMatches(); renderRecords(); renderVote();
+  }
+  function syncResults() {
+    var st = S.vote; if (!st.pollsLoaded || S.noDb || st.resBusy) return;
+    var list = pollList();
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      if (pollOpen(p) || resOf(p.id)) continue;
+      if (Date.now() - (st.resLast[p.id] || 0) > 15000) { loadResults(p); return; }
+    }
+  }
+  function praiseOf(pollId, memberId) { var r = resOf(pollId); return r && r.praise ? r.praise[memberId] || 0 : 0; }
+  function praiseTotal(memberId) {
+    return S.polls.reduce(function (sum, p) { return sum + (pollOpen(p) ? 0 : praiseOf(p.id, memberId)); }, 0);
+  }
+  function thumbHtml(pollId, memberId) {
+    var n = praiseOf(pollId, memberId);
+    return n ? ' <span class="thumb" title="칭찬 ' + n + '">👍' + (n > 1 ? n : "") + "</span>" : "";
+  }
+  function thumbTotalHtml(memberId) {
+    var n = praiseTotal(memberId);
+    return n ? " · 👍 " + n : "";
   }
   function resultRows(p, res) {
     return p.candidates.map(function (id) { return { id: id, name: candName(p, id), n: res.counts[id] || 0 }; })
@@ -1125,7 +1173,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function voteShareText(p) {
     var club = S.rules.name || DEFAULT_RULES.name, url = siteUrl();
     if (pollOpen(p)) {
-      return "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표\n이날 가장 빛난 선수를 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 투표하러 가기\n" + url;
+      return "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표\n이날 MOM과 칭찬하고 싶은 사람(최대 3명)을 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 투표하러 가기\n" + url;
     }
     var res = S.vote.res[p.id];
     if (!res) return "";
@@ -1137,7 +1185,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       prev = r.n;
       if (lv <= 3) lines.push(medals[lv - 1] + " " + r.name + " " + r.n + "표");
     });
-    return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n" + lines.join("\n") + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
+    var pr = p.candidates.map(function (id) { return { name: candName(p, id), n: res.praise && res.praise[id] || 0 }; })
+      .filter(function (r) { return r.n > 0; }).sort(function (a, b) { return b.n - a.n || byName(a, b); }).slice(0, 5);
+    var prLine = pr.length ? "\n\n👍 칭찬 받은 사람\n" + pr.map(function (r) { return r.name + " " + r.n; }).join(" · ") : "";
+    return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n" + lines.join("\n") + prLine + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
   }
 
   function renderVote() {
@@ -1146,12 +1197,13 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var cuid = cu ? cu.uid : "";
     if (st.seenUid !== undefined && st.seenUid !== cuid) {
       st.mine = {}; st.mineLast = {}; st.mineErr = {};
-      if (!st.busy) { st.pick = ""; st.armed = false; }
+      if (!st.busy) { st.pick = ""; st.praise = []; st.armed = false; }
     }
     st.seenUid = cuid;
     renderVoteAdmin();
     if (S.noDb) { box.innerHTML = ""; return; }
     if (!st.pollsLoaded) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    syncResults();
     var p = curPoll();
     if (!p) { box.innerHTML = emptyBlock("진행 중인 투표가 없어요", "경기 결과가 올라오면 MOM 투표가 열려요."); return; }
     var open = pollOpen(p), end = tms(p.endsAt);
@@ -1174,20 +1226,31 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         return;
       }
       if (mine) {
-        box.innerHTML = head + '<div class="empty"><b>✅ 투표했어요</b>내가 고른 사람: ' + esc(candName(p, mine)) + "<br>" + esc(fmtWhen(end)) + "에 마감되거나, 참석자 전원이 투표하면 바로 결과가 공개돼요.</div>";
+        box.innerHTML = head + '<div class="empty"><b>✅ 투표했어요</b>내 MOM: ' + esc(candName(p, mine.choice)) + (mine.praise.length ? "<br>내 칭찬: " + mine.praise.map(function (id) { return esc(candName(p, id)); }).join(", ") : "") + "<br>" + esc(fmtWhen(end)) + "에 마감되거나, 참석자 전원이 투표하면 바로 결과가 공개돼요.</div>";
         return;
       }
       var pickName = st.pick ? candName(p, st.pick) : "";
-      var grid = p.candidates.map(function (id) {
+      var pr = st.praise.filter(function (id) { return id !== st.pick; });
+      var momGrid = p.candidates.map(function (id) {
         return '<button class="vopt" type="button" data-act="vote-pick" data-id="' + esc(id) + '" aria-pressed="' + (st.pick === id) + '">' + esc(candName(p, id)) + "</button>";
       }).join("");
-      var label = !st.pick ? "후보를 골라 주세요" : st.armed ? esc(pickName) + " 확정 · 한 번 더 누르세요" : esc(pickName) + "에게 투표하기";
-      box.innerHTML = head + '<p class="note">익명으로 투표돼요. 한 기기에서 한 번만 할 수 있고, 바꿀 수 없어요. 이날 참석한 ' + p.candidates.length + "명 중 한 명(본인 포함)을 골라 주세요. 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감돼요.</p>" +
-        '<div class="vgrid">' + grid + '</div><div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
+      var praiseSec = "";
+      if (st.pick) {
+        praiseSec = '<h3 class="vsub">2. 칭찬하기 <small>선택 · 최대 3명 · ' + pr.length + "/3</small></h3>" +
+          '<div class="vgrid">' + p.candidates.filter(function (id) { return id !== st.pick; }).map(function (id) {
+            var on = pr.indexOf(id) >= 0;
+            return '<button class="vopt vpr" type="button" data-act="vote-praise" data-id="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? "👍 " : "") + esc(candName(p, id)) + "</button>";
+          }).join("") + "</div>";
+      }
+      var base = "MOM " + pickName + (pr.length ? " · 칭찬 " + pr.length + "명" : "");
+      var label = !st.pick ? "MOM을 먼저 골라 주세요" : st.armed ? esc(base) + " — 한 번 더 누르면 확정" : esc(base) + " 투표하기";
+      box.innerHTML = head + '<p class="note">익명으로 투표돼요. 한 기기에서 한 번만 할 수 있고, 바꿀 수 없어요. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 3명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감돼요.</p>" +
+        '<h3 class="vsub">1. MOM 선택 <small>1명</small></h3><div class="vgrid">' + momGrid + "</div>" + praiseSec +
+        '<div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
       return;
     }
 
-    var res = st.res[p.id];
+    var res = resOf(p.id);
     if (!res) {
       box.innerHTML = head + '<p class="empty">' + (st.resErr[p.id] ? "결과를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요." : "결과를 집계하는 중…") + "</p>";
       if (!st.resBusy && Date.now() - (st.resLast[p.id] || 0) > 15000) loadResults(p);
@@ -1201,6 +1264,13 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       var pct = Math.round(r.n / res.total * 100);
       return '<div class="vres' + (r.n === max ? " vtop" : "") + '"><span class="vn">' + esc(r.name) + '</span><span class="vc">' + r.n + '표</span><div class="vbar"><i style="width:' + pct + '%"></i></div></div>';
     }).join("") + "</div>";
+    var prRows = p.candidates.map(function (id) { return { name: candName(p, id), n: res.praise && res.praise[id] || 0 }; })
+      .filter(function (r) { return r.n > 0; }).sort(function (a, b) { return b.n - a.n || byName(a, b); });
+    if (prRows.length) {
+      out += '<h3 class="vsub">👍 칭찬 받은 사람</h3><div class="vchips">' + prRows.map(function (r) {
+        return '<span class="vchip">' + esc(r.name) + " <b>" + r.n + "</b></span>";
+      }).join("") + "</div>";
+    }
     box.innerHTML = head + out + '<p class="note">총 ' + res.total + "명이 투표했어요.</p>";
   }
 
@@ -1248,13 +1318,14 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
     st.busy = true;
     var choice = st.pick;
+    var praise = st.praise.filter(function (id, i, a) { return id !== choice && p.candidates.indexOf(id) >= 0 && a.indexOf(id) === i; }).slice(0, 3);
     try {
       var u = await ensureUser();
       var fs = S.db.fs, b = fs.batch();
-      b.set(fs.doc("polls/" + p.id + "/ballots/" + u.uid), { choice: choice });
+      b.set(fs.doc("polls/" + p.id + "/ballots/" + u.uid), { choice: choice, praise: praise });
       b.update(fs.doc("polls/" + p.id), { votes: firebase.firestore.FieldValue.increment(1) });
       await withTimeout(b.commit());
-      st.mine[p.id] = choice; delete st.mineErr[p.id];
+      st.mine[p.id] = { choice: choice, praise: praise }; delete st.mineErr[p.id];
       toast("투표했어요");
     } catch (e) {
       var c = e && e.code;
@@ -1262,7 +1333,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       else if (c === "auth/operation-not-allowed") toast("투표 기능이 아직 준비되지 않았어요. 관리자에게 알려 주세요");
       else toast("투표하지 못했어요. 인터넷 연결을 확인해 주세요");
     }
-    st.busy = false; st.armed = false; renderVote(); renderRank();
+    st.busy = false; st.armed = false; st.pick = ""; st.praise = []; renderVote(); renderRank();
   }
   async function startPoll() {
     var st = S.vote, date = st.adminDate;
@@ -1295,7 +1366,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         await withTimeout(b.commit());
       }
       await S.db.doc("polls/" + p.id).delete();
-      delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요");
+      var c3 = readCache(); delete c3[resKey(p)]; writeCache(c3);
+      delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요"); renderMatches(); renderRecords();
     } catch (e) { fail(e); }
   }
   async function copyVoteShare() {
@@ -1557,7 +1629,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     else if (act === "export") exportBackup();
     else if (act === "import-pick") $("#importFile").click();
     else if (act === "share-copy") copyShare();
-    else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.armed = false; renderVote(); }
+    else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.praise = S.vote.praise.filter(function (x) { return x !== S.vote.pick; }); S.vote.armed = false; renderVote(); }
+    else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= 3) toast("칭찬은 최대 3명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
     else if (act === "vote-submit") submitVote();
     else if (act === "vote-start") startPoll();
     else if (act === "vote-close") { if (confirmed(btn)) closePoll(); }
