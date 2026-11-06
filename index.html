@@ -370,6 +370,11 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .top-user { margin-top: 0.4rem; font-size: 0.78rem; opacity: 0.8; }
 #loginOv .sheet-b input[type="email"], #loginOv .sheet-b input[type="password"] { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
 .errline { margin: 0; color: var(--loss); font-size: 0.85rem; }
+.tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tabs-in::-webkit-scrollbar { display: none; }
+.tabs-in { gap: 0.25rem; padding-top: 0.55rem; padding-bottom: 0.55rem; padding-left: 12px; padding-right: 12px; }
+.tab { flex: 1 0 auto; padding: 0.42rem 0.36rem; font-size: 0.8rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); white-space: nowrap; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 700; }
 .vbanner { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; width: 100%; box-sizing: border-box; margin: 0 0 0.8rem; padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--accent); background: var(--win-bg); color: var(--win); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
 .vhead { display: flex; flex-direction: column; gap: 0.15rem; margin: 0.2rem 0 0.7rem; }
 .vhead b { font-size: 1.1rem; }
@@ -416,7 +421,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     <button class="tab" role="tab" id="tab-rank" data-act="tab" data-tab="rank" aria-selected="true" type="button">순위</button>
     <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="false" type="button">경기</button>
     <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석부</button>
-    <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">기록</button>
+    <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">개인기록</button>
     <button class="tab" role="tab" id="tab-vote" data-act="tab" data-tab="vote" aria-selected="false" type="button">MOM투표</button>
     <button class="tab" role="tab" id="tab-members" data-act="tab" data-tab="members" aria-selected="false" type="button">멤버</button>
     <button class="tab" role="tab" id="tab-admin" data-act="tab" data-tab="admin" aria-selected="false" type="button" hidden>관리자</button>
@@ -432,12 +437,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   </section>
 
   <section id="panel-attendance" role="tabpanel" aria-labelledby="tab-attendance" hidden>
-    <div class="sect-head"><h2>출석부</h2><p>칸의 숫자는 그날 받은 승점이에요. 날짜를 누르면 그날 기록을 고칠 수 있어요.</p></div>
+    <div class="sect-head"><h2>출석부</h2></div>
     <div id="attBody"></div>
   </section>
 
   <section id="panel-records" role="tabpanel" aria-labelledby="tab-records" hidden>
-    <div class="sect-head"><h2>개인 기록</h2><p id="recNote">이름을 누르면 유니폼 색별 승률과, 함께 뛰면 잘 이기는 팀원 순위가 펼쳐져요.</p></div>
+    <div class="sect-head"><h2>개인기록</h2><p id="recNote">이름을 누르면 유니폼 색별 승률과, 함께 뛰면 잘 이기는 팀원 순위가 펼쳐져요.</p></div>
     <div id="recBody"></div>
   </section>
 
@@ -669,7 +674,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
         "</b>" + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
     }
-    html += '<div class="sect-head"><h2>누적 승점</h2><p>' + ruleText() + " · 동점이면 출석이 많은 순서예요.</p></div>";
+    html += '<div class="sect-head"><h2>누적 승점</h2><p>이번 시즌 승점 레이스!! 동점이면 출석이 많은 순서입니다.</p></div>';
     if (!c.ms.length) {
       html += emptyBlock("아직 경기 기록이 없어요", "첫 경기를 기록하면 순위가 만들어져요.");
     }
@@ -720,7 +725,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var rows = c.rows.slice().sort(byName);
     var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + ms.map(function (m) {
       return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
-        (m.outcomes ? '<span class="D">승패</span>' : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
+        (m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
     }).join("") + "</tr>";
     var body = rows.map(function (r) {
       var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
