@@ -153,6 +153,8 @@ button { cursor: pointer; }
 .top-in { position: relative; padding-block: 1.1rem 1.2rem; }
 .top-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .eyebrow { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+.homeLink { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tagline { margin: 0.45rem 0 0; font-size: 0.9rem; opacity: 0.85; }
 h1 { margin: 0.1rem 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.05; letter-spacing: 0.01em; }
 .top-sub { margin: 0.55rem 0 0; font-size: 0.85rem; opacity: 0.85; }
 .top .btn.primary { background: var(--pitch-ink); color: var(--pitch); border-color: transparent; }
@@ -439,9 +441,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   </svg>
   <div class="wrap top-in">
     <div class="top-row">
-      <div>
+      <div class="homeLink" role="button" tabindex="0" data-act="home" aria-label="처음 화면으로">
         <p class="eyebrow" id="clubName">FC 평풋</p>
         <h1>스코어보드</h1>
+        <p class="tagline">승점 · 출석 · 기록을 한눈에</p>
       </div>    </div>  </div>
 </header>
 
@@ -1657,6 +1660,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var btn = t.closest("[data-act]"); if (!btn) return;
     var act = btn.dataset.act;
     if (act === "tab") setTab(btn.dataset.tab);
+    else if (act === "home") { if (S.tab !== "matches") setTab("matches"); else window.scrollTo({ top: 0, behavior: "smooth" }); }
     else if (act === "new") openSheet(null);
     else if (act === "edit") editMatch(btn.dataset.id);
     else if (act === "admin-save") adminSave();
@@ -1722,6 +1726,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   });
   document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { if (!$("#loginOv").hidden) closeLogin(); else if (S.sheet) closeSheet(); } });
   $("#loginForm").addEventListener("submit", doLogin);
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Enter" && ev.target && ev.target.classList && ev.target.classList.contains("homeLink")) ev.target.click(); });
   window.addEventListener("hashchange", function () { setTab(location.hash.slice(1), true); });
 
   /* ---------- start ---------- */
