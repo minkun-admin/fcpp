@@ -1174,9 +1174,18 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function thumbIcon() {
     return '<svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
   }
+  function isMom(pollId, memberId) {
+    var r = resOf(pollId); if (!r || !r.counts) return false;
+    var max = 0; Object.keys(r.counts).forEach(function (k) { if (r.counts[k] > max) max = r.counts[k]; });
+    return max > 0 && r.counts[memberId] === max;
+  }
+  function momTotal(memberId) {
+    return S.polls.reduce(function (sum, p) { return sum + (!pollOpen(p) && isMom(p.id, memberId) ? 1 : 0); }, 0);
+  }
   function thumbHtml(pollId, memberId) {
-    var n = praiseOf(pollId, memberId);
-    return n ? '<span class="thumb" title="칭찬 ' + n + '">(' + thumbIcon() + (n > 1 ? n : "") + ")</span>" : "";
+    var n = praiseOf(pollId, memberId), k = isMom(pollId, memberId);
+    if (!n && !k) return "";
+    return '<span class="thumb" title="' + (k ? "MOM " : "") + (n ? "칭찬 " + n : "") + '">(' + (k ? "👑" : "") + (n ? thumbIcon() + (n > 1 ? n : "") : "") + ")</span>";
   }
   function matchCntText(m) {
     if (m.outcomes) return "참석 " + Object.keys(m.outcomes).filter(function (k) { return m.outcomes[k] === "W" || m.outcomes[k] === "D" || m.outcomes[k] === "L"; }).length + "명";
@@ -1185,8 +1194,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     return a + " : " + b;
   }
   function thumbTotalHtml(memberId) {
-    var n = praiseTotal(memberId);
-    return n ? ' · <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + n + "</span>" : "";
+    var n = praiseTotal(memberId), k = momTotal(memberId);
+    return (k ? ' · <span class="thumb" title="MOM ' + k + '">👑' + k + "</span>" : "") + (n ? ' · <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + n + "</span>" : "");
   }
   function resultRows(p, res) {
     return p.candidates.map(function (id) { return { id: id, name: candName(p, id), n: res.counts[id] || 0 }; })
