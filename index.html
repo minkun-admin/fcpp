@@ -370,6 +370,27 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .top-user { margin-top: 0.4rem; font-size: 0.78rem; opacity: 0.8; }
 #loginOv .sheet-b input[type="email"], #loginOv .sheet-b input[type="password"] { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
 .errline { margin: 0; color: var(--loss); font-size: 0.85rem; }
+.vbanner { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; width: 100%; box-sizing: border-box; margin: 0 0 0.8rem; padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--accent); background: var(--win-bg); color: var(--win); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.vhead { display: flex; flex-direction: column; gap: 0.15rem; margin: 0.2rem 0 0.7rem; }
+.vhead b { font-size: 1.1rem; }
+.vhead span { font-size: 0.85rem; color: var(--muted); }
+.vgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin: 0.8rem 0; }
+.vopt { min-height: 48px; padding: 0.4rem 0.6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.vopt[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.votego { position: sticky; bottom: 0; padding: 0.6rem 0 0.8rem; background: var(--bg); }
+.votego .btn { width: 100%; min-height: 48px; }
+.vwin { display: grid; gap: 0.1rem; padding: 0.9rem 1rem; border-radius: 12px; background: var(--pitch); color: var(--pitch-ink); margin-bottom: 0.8rem; }
+.vwin span { font-size: 0.8rem; opacity: 0.85; }
+.vwin b { font-size: 1.35rem; }
+.vwin small { font-size: 0.85rem; opacity: 0.85; }
+.vlist { display: grid; gap: 0.55rem; margin-bottom: 0.8rem; }
+.vres { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.6rem; align-items: baseline; }
+.vres .vn { font-weight: 700; }
+.vres .vc { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
+.vres .vbar { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.vres .vbar i { display: block; height: 100%; background: var(--line); }
+.vres.vtop .vbar i { background: var(--accent); }
+select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
 </style>
 </head>
 <body>
@@ -396,6 +417,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="false" type="button">경기</button>
     <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석</button>
     <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">기록</button>
+    <button class="tab" role="tab" id="tab-vote" data-act="tab" data-tab="vote" aria-selected="false" type="button">투표</button>
     <button class="tab" role="tab" id="tab-members" data-act="tab" data-tab="members" aria-selected="false" type="button">멤버</button>
     <button class="tab" role="tab" id="tab-admin" data-act="tab" data-tab="admin" aria-selected="false" type="button" hidden>관리자</button>
   </div>
@@ -417,6 +439,12 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
   <section id="panel-records" role="tabpanel" aria-labelledby="tab-records" hidden>
     <div class="sect-head"><h2>개인 기록</h2><p id="recNote">이름을 누르면 유니폼 색별 승률과, 함께 뛰면 잘 이기는 팀원 순위가 펼쳐져요.</p></div>
     <div id="recBody"></div>
+  </section>
+
+  <section id="panel-vote" role="tabpanel" aria-labelledby="tab-vote" hidden>
+    <div class="sect-head"><h2>MOM 투표</h2><p>경기가 끝나면 그날 참석한 멤버 중에서 가장 빛난 선수를 익명으로 뽑아요.</p></div>
+    <div id="voteBody"></div>
+    <div class="edit-only" id="voteAdmin"></div>
   </section>
 
   <section id="panel-members" role="tabpanel" aria-labelledby="tab-members" hidden>
@@ -521,7 +549,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     });
   };
   var DOW = ["일", "월", "화", "수", "목", "금", "토"];
-  var TABS = ["rank", "matches", "attendance", "records", "members", "admin"];
+  var TABS = ["rank", "matches", "attendance", "records", "vote", "members", "admin"];
   var DEFAULT_RULES = { name: "FC 평풋", win: 3, draw: 1, loss: 0 };
   var TEAM = { A: "노랑팀", B: "주황팀" };
 
@@ -636,7 +664,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
       box.innerHTML = emptyBlock("아직 멤버가 없어요", "멤버 탭에서 이름을 한 번에 추가할 수 있어요.", "members", S.readOnly ? "" : "멤버 추가하러 가기");
       return;
     }
-    var c = compute(), html = "", last = c.ms[c.ms.length - 1];
+    var c = compute(), html = voteBanner(), last = c.ms[c.ms.length - 1];
     if (last) {
       html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
         "</b>" + badgeHtml(last) + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
@@ -830,7 +858,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     document.documentElement.classList.toggle("ro", S.readOnly);
     $("#tab-admin").hidden = S.readOnly;
     if (S.readOnly && S.tab === "admin") setTab("rank");
-    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare();
+    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); renderVote();
   }
 
   /* ---------- tabs ---------- */
@@ -845,6 +873,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     if (!fromHash && location.hash.slice(1) !== t) location.hash = t;
     if (t === "attendance") { S.attScrolled = false; renderAtt(); }
     if (t === "admin") renderAdmin(false);
+    if (t === "vote") renderVote();
     window.scrollTo(0, 0);
   }
 
@@ -876,6 +905,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
         set: function (d) { return withTimeout(r.set(d)); },
         update: function (d) { return withTimeout(r.update(d)); },
         delete: function () { return withTimeout(r.delete()); },
+        get: function () { return r.get(); },
         onSnapshot: function (next, err) { return r.onSnapshot(next, err); }
       };
     }
@@ -886,6 +916,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
         var c = fs.collection(col);
         return {
           add: function (d) { return withTimeout(c.add(d)); },
+          get: function () { return c.get(); },
           onSnapshot: function (next, err) { return c.onSnapshot(next, err); }
         };
       }
@@ -997,16 +1028,279 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     var el = $("#sharePreview"); if (!el) return;
     el.textContent = shareText() || "경기 기록을 저장하면 공유할 글이 여기에 만들어져요.";
   }
-  async function copyShare() {
-    var t = shareText();
-    if (!t) { toast("먼저 경기 기록을 저장해 주세요"); return; }
-    try { await navigator.clipboard.writeText(t); toast("복사했어요. 카톡 단톡방에 붙여 넣으세요"); return; } catch (e) {}
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
     var ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
     document.body.appendChild(ta); ta.select();
     var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
     ta.remove();
-    toast(ok ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
+    return ok;
   }
+  async function copyShare() {
+    var t = shareText();
+    if (!t) { toast("먼저 경기 기록을 저장해 주세요"); return; }
+    toast((await copyText(t)) ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
+  }
+
+  /* ---------- MOM 투표 (익명, 기기당 1표, 마감 후 결과 공개) ---------- */
+  var VOTE_HOURS = 48;
+  S.polls = [];
+  S.vote = { pick: "", armed: false, busy: false, pollsLoaded: false, adminDate: "",
+    mine: {}, mineLast: {}, mineErr: {}, res: {}, resLast: {}, resErr: {} };
+
+  function tms(v) { return v && typeof v.toMillis === "function" ? v.toMillis() : Number(v) || 0; }
+  function fmtWhen(ms) {
+    var d = new Date(ms), h = d.getHours();
+    return (d.getMonth() + 1) + "/" + d.getDate() + "(" + DOW[d.getDay()] + ") " + (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + ":" + pad2(d.getMinutes());
+  }
+  function leftText(ms) {
+    var mins = Math.max(0, Math.ceil((ms - Date.now()) / 60000)), h = Math.floor(mins / 60), m = mins % 60;
+    return h ? h + "시간 " + (m ? m + "분 " : "") + "남음" : m + "분 남음";
+  }
+  function pollList() {
+    return S.polls.filter(function (p) { return p.date && Array.isArray(p.candidates); })
+      .sort(function (a, b) { return tms(b.startsAt) - tms(a.startsAt); });
+  }
+  function curPoll() { return pollList()[0] || null; }
+  function pollVotes(p) { return Number(p.votes) || 0; }
+  function allVoted(p) { return p.candidates.length > 0 && pollVotes(p) >= p.candidates.length; }
+  function pollOpen(p) { return Date.now() < tms(p.endsAt) && !allVoted(p); }
+  function progText(p) { return pollVotes(p) + "/" + p.candidates.length + "명 투표"; }
+  function candName(p, id) {
+    if (p.names && p.names[id]) return p.names[id];
+    var m = S.members.filter(function (x) { return x.id === id; })[0];
+    return m ? m.name : "(알 수 없음)";
+  }
+  function attendeesOf(m) {
+    return S.members.filter(function (mb) { return outcome(m, mb.id); }).map(function (mb) { return mb.id; });
+  }
+  function voteBanner() {
+    var p = curPoll();
+    if (!p || !pollOpen(p) || S.vote.mine[p.id]) return "";
+    return '<button class="vbanner" type="button" data-act="tab" data-tab="vote"><span>🗳️ ' + esc(fmtShort(p.date)) + " MOM 투표 진행 중 · " +
+      leftText(tms(p.endsAt)) + '</span><span aria-hidden="true">›</span></button>';
+  }
+  async function ensureUser() {
+    if (S.authReadyP) await S.authReadyP;
+    if (S.auth.currentUser) return S.auth.currentUser;
+    var c = await S.auth.signInAnonymously();
+    return c.user;
+  }
+  async function loadMine(p) {
+    var st = S.vote;
+    if (st.mineBusy) return;
+    st.mineBusy = true; st.mineLast[p.id] = Date.now();
+    try {
+      var u = await ensureUser();
+      var snap = await S.db.doc("polls/" + p.id + "/ballots/" + u.uid).get();
+      st.mine[p.id] = snap.exists ? ((snap.data() || {}).choice || "?") : "";
+      delete st.mineErr[p.id];
+    } catch (e) { st.mineErr[p.id] = (e && e.code) || "net"; }
+    st.mineBusy = false; renderVote(); renderRank();
+  }
+  async function loadResults(p) {
+    var st = S.vote;
+    if (st.resBusy) return;
+    st.resBusy = true; st.resLast[p.id] = Date.now();
+    try {
+      var snap = await S.db.collection("polls/" + p.id + "/ballots").get();
+      var counts = {}, total = 0;
+      snap.docs.forEach(function (d) {
+        var c = (d.data() || {}).choice;
+        if (c && p.candidates.indexOf(c) >= 0) { counts[c] = (counts[c] || 0) + 1; total++; }
+      });
+      st.res[p.id] = { counts: counts, total: total }; delete st.resErr[p.id];
+    } catch (e) { st.resErr[p.id] = (e && e.code) || "net"; }
+    st.resBusy = false; renderVote();
+  }
+  function resultRows(p, res) {
+    return p.candidates.map(function (id) { return { id: id, name: candName(p, id), n: res.counts[id] || 0 }; })
+      .sort(function (a, b) { return b.n - a.n || byName(a, b); });
+  }
+  function voteShareText(p) {
+    var club = S.rules.name || DEFAULT_RULES.name, url = siteUrl();
+    if (pollOpen(p)) {
+      return "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표\n이날 가장 빛난 선수를 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 투표하러 가기\n" + url;
+    }
+    var res = S.vote.res[p.id];
+    if (!res) return "";
+    if (!res.total) return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n투표한 사람이 없었어요.";
+    var medals = ["🥇", "🥈", "🥉"], lv = 0, prev = null, lines = [];
+    resultRows(p, res).forEach(function (r) {
+      if (r.n < 1) return;
+      if (prev === null || r.n !== prev) lv++;
+      prev = r.n;
+      if (lv <= 3) lines.push(medals[lv - 1] + " " + r.name + " " + r.n + "표");
+    });
+    return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n" + lines.join("\n") + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
+  }
+
+  function renderVote() {
+    var box = $("#voteBody"); if (!box) return;
+    var st = S.vote, cu = S.auth && S.auth.currentUser;
+    var cuid = cu ? cu.uid : "";
+    if (st.seenUid !== undefined && st.seenUid !== cuid) {
+      st.mine = {}; st.mineLast = {}; st.mineErr = {};
+      if (!st.busy) { st.pick = ""; st.armed = false; }
+    }
+    st.seenUid = cuid;
+    renderVoteAdmin();
+    if (S.noDb) { box.innerHTML = ""; return; }
+    if (!st.pollsLoaded) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var p = curPoll();
+    if (!p) { box.innerHTML = emptyBlock("진행 중인 투표가 없어요", "경기 결과가 올라오면 MOM 투표가 열려요."); return; }
+    var open = pollOpen(p), end = tms(p.endsAt);
+    var head = '<div class="vhead"><b>🗳️ ' + esc(fmtDate(p.date)) + " MOM 투표</b><span>" +
+      (open ? "마감 " + esc(fmtWhen(end)) + " · " + leftText(end) + " · " + progText(p) : allVoted(p) ? "전원 투표 완료로 마감됐어요" : "마감됐어요") + "</span></div>";
+
+    if (open) {
+      var mine = st.mine[p.id];
+      if (st.mineErr[p.id]) {
+        var anon = st.mineErr[p.id] === "auth/operation-not-allowed";
+        box.innerHTML = head + '<div class="empty"><b>' + (anon ? "투표 기능이 아직 준비되지 않았어요" : "투표 화면을 불러오지 못했어요") + "</b>" +
+          (anon ? "관리자에게 알려 주세요." : "인터넷 연결을 확인해 주세요.") +
+          '<div><button class="btn" type="button" data-act="vote-retry">다시 시도</button></div></div>';
+        if (Date.now() - (st.mineLast[p.id] || 0) > 30000 && !st.mineBusy) loadMine(p);
+        return;
+      }
+      if (mine === undefined) {
+        box.innerHTML = head + '<p class="empty">확인하는 중…</p>';
+        if (!st.mineBusy && Date.now() - (st.mineLast[p.id] || 0) > 5000) loadMine(p);
+        return;
+      }
+      if (mine) {
+        box.innerHTML = head + '<div class="empty"><b>✅ 투표했어요</b>내가 고른 사람: ' + esc(candName(p, mine)) + "<br>" + esc(fmtWhen(end)) + "에 마감되거나, 참석자 전원이 투표하면 바로 결과가 공개돼요.</div>";
+        return;
+      }
+      var pickName = st.pick ? candName(p, st.pick) : "";
+      var grid = p.candidates.map(function (id) {
+        return '<button class="vopt" type="button" data-act="vote-pick" data-id="' + esc(id) + '" aria-pressed="' + (st.pick === id) + '">' + esc(candName(p, id)) + "</button>";
+      }).join("");
+      var label = !st.pick ? "후보를 골라 주세요" : st.armed ? esc(pickName) + " 확정 · 한 번 더 누르세요" : esc(pickName) + "에게 투표하기";
+      box.innerHTML = head + '<p class="note">익명으로 투표돼요. 한 기기에서 한 번만 할 수 있고, 바꿀 수 없어요. 이날 참석한 ' + p.candidates.length + "명 중 한 명(본인 포함)을 골라 주세요. 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감돼요.</p>" +
+        '<div class="vgrid">' + grid + '</div><div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
+      return;
+    }
+
+    var res = st.res[p.id];
+    if (!res) {
+      box.innerHTML = head + '<p class="empty">' + (st.resErr[p.id] ? "결과를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요." : "결과를 집계하는 중…") + "</p>";
+      if (!st.resBusy && Date.now() - (st.resLast[p.id] || 0) > 15000) loadResults(p);
+      return;
+    }
+    if (!res.total) { box.innerHTML = head + '<div class="empty"><b>투표한 사람이 없었어요</b></div>'; return; }
+    var rows = resultRows(p, res), max = rows[0].n;
+    var winners = rows.filter(function (r) { return r.n === max; }).map(function (r) { return esc(r.name); });
+    var out = '<div class="vwin"><span>' + (winners.length > 1 ? "공동 MOM" : "MOM") + "</span><b>👑 " + winners.join(" · ") + "</b><small>" + max + "표</small></div>";
+    out += '<div class="vlist">' + rows.map(function (r) {
+      var pct = Math.round(r.n / res.total * 100);
+      return '<div class="vres' + (r.n === max ? " vtop" : "") + '"><span class="vn">' + esc(r.name) + '</span><span class="vc">' + r.n + '표</span><div class="vbar"><i style="width:' + pct + '%"></i></div></div>';
+    }).join("") + "</div>";
+    box.innerHTML = head + out + '<p class="note">총 ' + res.total + "명이 투표했어요.</p>";
+  }
+
+  function renderVoteAdmin() {
+    var box = $("#voteAdmin"); if (!box || S.readOnly) return;
+    var ae = document.activeElement;
+    if (ae && box.contains(ae) && ae.tagName === "SELECT") return;
+    if (!ready() || !S.vote.pollsLoaded) { box.innerHTML = ""; return; }
+    var st = S.vote, ms = sortedMatches().filter(function (m) { return attendeesOf(m).length; }).reverse();
+    if (!st.adminDate || !ms.some(function (m) { return m.date === st.adminDate; })) st.adminDate = ms[0] ? ms[0].date : "";
+    var html = '<div class="sect-head"><h2>투표 관리</h2><p>경기를 저장한 뒤 투표를 시작하세요. 그날 참석한 멤버가 후보가 되고, ' + VOTE_HOURS + "시간 뒤에 마감돼요.</p></div>";
+    html += '<div class="panel-box">';
+    if (!ms.length) html += '<p class="count">저장된 경기가 없어요.</p>';
+    else {
+      var sel = ms.filter(function (m) { return m.date === st.adminDate; })[0];
+      var exists = S.polls.some(function (p) { return p.id === st.adminDate; });
+      html += '<div><label class="fl" for="voteMatch">경기 선택</label><select id="voteMatch" class="vsel">' + ms.map(function (m) {
+        return '<option value="' + esc(m.date) + '"' + (m.date === st.adminDate ? " selected" : "") + ">" + esc(fmtDate(m.date)) + " · 참석 " + attendeesOf(m).length + "명</option>";
+      }).join("") + "</select></div>";
+      html += '<p class="count">' + (exists ? "이 경기는 이미 투표를 만들었어요." :
+        "후보 " + attendeesOf(sel).length + "명 · 지금 시작하면 " + esc(fmtWhen(Date.now() + VOTE_HOURS * 3600000)) + "에 마감돼요. 참석자 전원이 투표하면 바로 마감돼요.") + "</p>";
+      if (!exists) html += '<div><button class="btn primary" type="button" data-act="vote-start">투표 시작</button></div>';
+    }
+    html += "</div>";
+    var p = curPoll();
+    if (p) {
+      var open = pollOpen(p), txt = voteShareText(p);
+      html += '<div class="panel-box"><p class="count">현재 투표: <b>' + esc(fmtDate(p.date)) + "</b> · " + (open ? "진행 중 · 마감 " + esc(fmtWhen(tms(p.endsAt))) + " · " + progText(p) : "마감됨 · " + progText(p)) + "</p>" +
+        (txt ? '<pre class="sharebox" id="voteSharePreview">' + esc(txt) + "</pre>" : "") +
+        '<div class="btnrow">' + (txt ? '<button class="btn primary" type="button" data-act="vote-share">' + (open ? "투표 안내 글 복사" : "결과 글 복사") + "</button>" : "") +
+        (open ? '<button class="btn" type="button" data-act="vote-close" data-confirm="1" data-arm="한 번 더 누르면 마감">지금 마감</button>' : "") +
+        '<button class="btn danger" type="button" data-act="vote-del" data-confirm="1">투표 삭제</button></div></div>';
+    }
+    box.innerHTML = html;
+  }
+
+  async function submitVote() {
+    var st = S.vote, p = curPoll();
+    if (!p || !st.pick || st.busy) return;
+    if (!pollOpen(p)) { toast("투표가 마감됐어요"); renderVote(); return; }
+    if (!st.armed) {
+      st.armed = true; renderVote();
+      clearTimeout(st.armT); st.armT = setTimeout(function () { st.armed = false; renderVote(); }, 5000);
+      return;
+    }
+    st.busy = true;
+    var choice = st.pick;
+    try {
+      var u = await ensureUser();
+      var fs = S.db.fs, b = fs.batch();
+      b.set(fs.doc("polls/" + p.id + "/ballots/" + u.uid), { choice: choice });
+      b.update(fs.doc("polls/" + p.id), { votes: firebase.firestore.FieldValue.increment(1) });
+      await withTimeout(b.commit());
+      st.mine[p.id] = choice; delete st.mineErr[p.id];
+      toast("투표했어요");
+    } catch (e) {
+      var c = e && e.code;
+      if (c === "permission-denied") { delete st.mine[p.id]; st.mineLast[p.id] = 0; toast("이미 투표했거나 마감된 투표예요"); }
+      else if (c === "auth/operation-not-allowed") toast("투표 기능이 아직 준비되지 않았어요. 관리자에게 알려 주세요");
+      else toast("투표하지 못했어요. 인터넷 연결을 확인해 주세요");
+    }
+    st.busy = false; st.armed = false; renderVote(); renderRank();
+  }
+  async function startPoll() {
+    var st = S.vote, date = st.adminDate;
+    var m = S.matches.filter(function (x) { return x.id === date; })[0];
+    if (!m || S.readOnly) return;
+    if (S.polls.some(function (p) { return p.id === date; })) { toast("이 경기는 이미 투표를 만들었어요"); return; }
+    var ids = attendeesOf(m);
+    if (ids.length < 2) { toast("참석자가 2명 이상이어야 해요"); return; }
+    var names = {};
+    ids.forEach(function (id) { names[id] = candName({}, id); });
+    var now = Date.now(), T = firebase.firestore.Timestamp;
+    try {
+      await S.db.doc("polls/" + date).set({ date: date, candidates: ids, names: names,
+        startsAt: T.fromMillis(now), endsAt: T.fromMillis(now + VOTE_HOURS * 3600000), votes: 0, createdAt: now });
+      toast("투표를 시작했어요. 아래 안내 글을 복사해 단톡방에 올리세요");
+    } catch (e) { fail(e); }
+  }
+  async function closePoll() {
+    var p = curPoll(); if (!p || S.readOnly) return;
+    try { await S.db.doc("polls/" + p.id).update({ endsAt: firebase.firestore.Timestamp.fromMillis(Date.now()) }); toast("투표를 마감했어요"); }
+    catch (e) { fail(e); }
+  }
+  async function deletePoll() {
+    var p = curPoll(); if (!p || S.readOnly) return;
+    try {
+      var snap = await S.db.collection("polls/" + p.id + "/ballots").get(), fs = S.db.fs, docs = snap.docs;
+      for (var i = 0; i < docs.length; i += 400) {
+        var b = fs.batch();
+        docs.slice(i, i + 400).forEach(function (d) { b.delete(d.ref); });
+        await withTimeout(b.commit());
+      }
+      await S.db.doc("polls/" + p.id).delete();
+      delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요");
+    } catch (e) { fail(e); }
+  }
+  async function copyVoteShare() {
+    var p = curPoll(), t = p ? voteShareText(p) : "";
+    if (!t) { toast("복사할 글이 아직 없어요"); return; }
+    toast((await copyText(t)) ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
+  }
+  setInterval(function () {
+    if (S.tab === "vote") renderVote(); else if (S.tab === "rank") renderRank();
+  }, 30000);
 
   /* ---------- toast & errors ---------- */
   var toastTimer;
@@ -1210,7 +1504,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
   function confirmed(btn) {
     if (!btn.dataset.confirm) return true;
     if (btn.dataset.armed === "1") return true;
-    btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "한 번 더 누르면 삭제";
+    btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = btn.dataset.arm || "한 번 더 누르면 삭제";
     clearTimeout(armTimer);
     armTimer = setTimeout(function () { btn.dataset.armed = ""; if (btn.dataset.label) btn.textContent = btn.dataset.label; }, 3500);
     return false;
@@ -1258,6 +1552,13 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     else if (act === "export") exportBackup();
     else if (act === "import-pick") $("#importFile").click();
     else if (act === "share-copy") copyShare();
+    else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.armed = false; renderVote(); }
+    else if (act === "vote-submit") submitVote();
+    else if (act === "vote-start") startPoll();
+    else if (act === "vote-close") { if (confirmed(btn)) closePoll(); }
+    else if (act === "vote-del") { if (confirmed(btn)) deletePoll(); }
+    else if (act === "vote-share") copyVoteShare();
+    else if (act === "vote-retry") { S.vote.mineLast = {}; S.vote.mineErr = {}; S.vote.resLast = {}; S.vote.resErr = {}; renderVote(); }
     else if (act === "toggle-active") {
       var m = S.members.filter(function (x) { return x.id === btn.dataset.id; })[0]; if (!m) return;
       try { await S.db.doc("members/" + m.id).update({ active: m.active === false }); } catch (e) { fail(e); }
@@ -1274,6 +1575,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
   document.addEventListener("change", async function (ev) {
     var el = ev.target;
     if (el.id === "importFile") { importBackup(el.files && el.files[0]); el.value = ""; return; }
+    if (el.id === "voteMatch") { S.vote.adminDate = el.value; renderVoteAdmin(); return; }
     if (el.dataset && el.dataset.rename) {
       var name = el.value.trim().slice(0, 20);
       var m = S.members.filter(function (x) { return x.id === el.dataset.rename; })[0];
@@ -1303,8 +1605,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
       if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       db = createFirestoreDb(firebase.firestore());
       S.auth = firebase.auth();
+      S.authReadyP = new Promise(function (r) { S.authFirst = r; });
       S.auth.onAuthStateChanged(function (u) {
-        S.readOnly = !u;
+        S.readOnly = !u || u.isAnonymous;
+        if (S.authFirst) { S.authFirst(); S.authFirst = null; }
         render();
       });
     } catch (e) { db = null; }
@@ -1323,6 +1627,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
       S.rules = Object.assign({}, DEFAULT_RULES, snap.exists ? snap.data() : {});
       S.loaded.r = true; render();
     }, onErr);
+    db.collection("polls").onSnapshot(function (snap) {
+      S.polls = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      S.vote.pollsLoaded = true; render();
+    }, function () { S.vote.pollsLoaded = true; render(); });
   }
   init();
   if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
