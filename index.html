@@ -316,6 +316,14 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .bar i.A { background: var(--teamA); }
 .bar i.B { background: var(--teamB); }
 .bar i.W { background: var(--accent); }
+.bar i.L { background: var(--loss); }
+.mcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.mcol { min-width: 0; }
+.mcol h4 { margin: 0 0 0.55rem; font-size: 0.8rem; color: var(--ink); }
+.mcol h4 small { color: var(--muted); font-weight: 400; }
+.mcols .mate { grid-template-columns: 0.9rem minmax(0, 1fr) auto; }
+.mcols .mate .mk { font-size: 0.85rem; }
+.mcols .mate .mr { font-size: 0.72rem; }
 .mates { display: grid; gap: 0.65rem; margin: 0; padding: 0; list-style: none; }
 .mate { display: grid; grid-template-columns: 1.3rem minmax(0, 1fr) auto; gap: 0.15rem 0.5rem; align-items: baseline; }
 .mate .mk { grid-column: 1; grid-row: 1; font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -385,6 +393,9 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 :root[data-theme="dark"] { --thumb: #FBBF24; }
 .thumb { display: inline-flex; align-items: center; gap: 0.12em; margin-left: 0.1em; font-size: 0.85em; font-weight: 800; color: var(--thumb); white-space: nowrap; }
 .thumb .ti { width: 1.1em; height: 1.1em; vertical-align: 0; }
+.ci { width: 1.3em; height: 1.3em; fill: #FFC21A; stroke: #C98A00; stroke-width: 0.9; stroke-linejoin: round; vertical-align: -0.28em; }
+.thumb .ci { width: 1.45em; height: 1.45em; vertical-align: 0; margin: 0 -0.12em; }
+.vwin .ci { width: 1.2em; height: 1.2em; }
 .vsub .thumb { font-size: 1em; margin-left: 0; }
 .vopt .ti { vertical-align: -0.15em; }
 .tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -449,7 +460,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   <section id="panel-rank" role="tabpanel" aria-labelledby="tab-rank"><div id="rankBody"></div></section>
 
   <section id="panel-matches" role="tabpanel" aria-labelledby="tab-matches" hidden>
-    <div class="sect-head"><h2>경기 기록</h2><p>최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.</p></div>
+    <div class="sect-head"><h2>경기 기록</h2><p id="matchesHint">최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.</p></div>
     <div id="matchBody"></div>
   </section>
 
@@ -807,8 +818,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       return;
     }
     var skipped = R.total - R.used;
-    note.textContent = "팀이 기록된 " + R.used + "경기만 계산해요" + (skipped ? " (팀 기록이 없는 " + skipped + "경기는 빠져요)" : "") +
-      ". 승률은 승 ÷ 경기 수이고, 경기 수가 적을 때는 참고만 하세요.";
+    note.textContent = "승률은 승 ÷ 경기 수이고, 경기 수가 적을 때는 참고만 하세요.";
     var nameOf = {}; S.members.forEach(function (m) { nameOf[m.id] = m.name; });
     var UN = { A: "노랑", B: "주황" };
 
@@ -820,6 +830,16 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         return { id: id, name: nameOf[id] || "(삭제된 멤버)", g: m.g, w: m.w, d: m.d, l: m.l, p: pct(m.w, m.g) };
       }).sort(function (x, y) { return y.p - x.p || y.w - x.w || y.g - x.g || byName(x, y); });
       var top = mates.filter(function (m) { return m.w > 0; }).slice(0, 5);
+      var bot = mates.map(function (m) { m.q = pct(m.l, m.g); return m; }).filter(function (m) { return m.l > 0; })
+        .sort(function (x, y) { return y.q - x.q || y.l - x.l || y.g - x.g || byName(x, y); }).slice(0, 5);
+      function mateCol(title, how, list, k) {
+        return '<div class="mcol"><h4>' + title + " <small>" + how + "</small></h4>" + (list.length ? '<ol class="mates">' + list.map(function (m, i) {
+          var v = k === "W" ? m.p : m.q;
+          return '<li class="mate"><span class="mk">' + (i + 1) + '</span><span class="mn">' + esc(m.name) + '</span><span class="mp">' + v + '%</span>' +
+            '<span class="mr">' + m.g + "경기 · " + m.w + "승 " + m.d + "무 " + m.l + "패</span>" +
+            '<span class="bar"><i class="' + k + '" style="width:' + v + '%"></i></span></li>';
+        }).join("") + "</ol>" : '<p class="rec-empty">' + (k === "W" ? "아직 함께 이긴 팀원이 없어요." : "아직 함께 진 팀원이 없어요.") + "</p>") + "</div>";
+      }
 
       var minis = ["A", "B"].map(function (t) {
         var u = s.uni[t];
@@ -838,11 +858,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       if (!s.g) body = '<p class="rec-empty">팀이 기록된 경기에 나오면 여기에 보여요.</p>';
       else {
         body = '<div><h3>유니폼 색별 승률</h3><div class="unis">' + uniBox("A", a, pa) + uniBox("B", b, pb) + "</div></div>" +
-          "<div><h3>함께 뛰면 잘 이기는 팀원 (승률 순, 최대 5명)</h3>" + (top.length ? '<ol class="mates">' + top.map(function (m, i) {
-            return '<li class="mate"><span class="mk">' + (i + 1) + '</span><span class="mn">' + esc(m.name) + '</span><span class="mp">' + m.p + '%</span>' +
-              '<span class="mr">' + m.g + "경기 · " + m.w + "승 " + m.d + "무 " + m.l + "패</span>" +
-              '<span class="bar"><i class="W" style="width:' + m.p + '%"></i></span></li>';
-          }).join("") + "</ol>" : '<p class="rec-empty">아직 함께 이긴 팀원이 없어요.</p>') + "</div>";
+          '<div><h3>함께 뛰면 (최대 5명)</h3><div class="mcols">' + mateCol("잘 이기는 팀원", "승률순", top, "W") + mateCol("잘 지는 팀원", "패율순", bot, "L") + "</div></div>";
       }
       return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
         '</span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="sub">' + sub + thumbTotalHtml(r.id) + '</span></span><span class="minis">' + minis +
@@ -1012,6 +1028,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function syncAuthUi() {
     $("#loginBtn").hidden = !S.readOnly;
     $("#logoutBtn").hidden = S.readOnly;
+    var mh = $("#matchesHint");
+    if (mh) mh.textContent = S.readOnly ? "최근 경기부터 보여줘요. 🥅 승·패 명단과 MOM(👑)·칭찬(👍)을 확인할 수 있어요." : "최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.";
   }
 
   /* ---------- 카톡 공유 글 ---------- */
@@ -1174,6 +1192,9 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function thumbIcon() {
     return '<svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
   }
+  function crownIcon() {
+    return '<svg class="ci" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7.5l4.6 4.2L12 4l4.9 7.7 4.6-4.2-1.9 11H4.4l-1.9-11zM4.8 20.5h14.4V22H4.8z"/></svg>';
+  }
   function isMom(pollId, memberId) {
     var r = resOf(pollId); if (!r || !r.counts) return false;
     var max = 0; Object.keys(r.counts).forEach(function (k) { if (r.counts[k] > max) max = r.counts[k]; });
@@ -1185,7 +1206,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function thumbHtml(pollId, memberId) {
     var n = praiseOf(pollId, memberId), k = isMom(pollId, memberId);
     if (!n && !k) return "";
-    return '<span class="thumb" title="' + (k ? "MOM " : "") + (n ? "칭찬 " + n : "") + '">(' + (k ? "👑" : "") + (n ? thumbIcon() + (n > 1 ? n : "") : "") + ")</span>";
+    return '<span class="thumb' + '" title="' + (k ? "MOM " : "") + (n ? "칭찬 " + n : "") + '">(' + (k ? crownIcon() : "") + (n ? thumbIcon() + (n > 1 ? n : "") : "") + ")</span>";
   }
   function matchCntText(m) {
     if (m.outcomes) return "참석 " + Object.keys(m.outcomes).filter(function (k) { return m.outcomes[k] === "W" || m.outcomes[k] === "D" || m.outcomes[k] === "L"; }).length + "명";
@@ -1195,7 +1216,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   }
   function thumbTotalHtml(memberId) {
     var n = praiseTotal(memberId), k = momTotal(memberId);
-    return (k ? ' · <span class="thumb" title="MOM ' + k + '">👑' + k + "</span>" : "") + (n ? ' · <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + n + "</span>" : "");
+    return (k ? ' · <span class="thumb" title="MOM ' + k + '">' + crownIcon() + k + "</span>" : "") + (n ? ' · <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + n + "</span>" : "");
   }
   function resultRows(p, res) {
     return p.candidates.map(function (id) { return { id: id, name: candName(p, id), n: res.counts[id] || 0 }; })
@@ -1275,7 +1296,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }
       var base = "MOM " + pickName + (pr.length ? " · 칭찬 " + pr.length + "명" : "");
       var label = !st.pick ? "MOM을 먼저 골라 주세요" : st.armed ? esc(base) + " — 한 번 더 누르면 확정" : esc(base) + " 투표하기";
-      box.innerHTML = head + '<p class="note">익명으로 투표돼요. 한 기기에서 한 번만 할 수 있고, 바꿀 수 없어요. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 3명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감돼요.</p>" +
+      box.innerHTML = head + '<p class="note">익명투표입니다. 한 기기에서 한 번만 할 수 있고, 변경 불가. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 3명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감됩니다.</p>" +
         '<h3 class="vsub">1. MOM 선택 <small>1명</small></h3><div class="vgrid">' + momGrid + "</div>" + praiseSec +
         '<div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
       return;
