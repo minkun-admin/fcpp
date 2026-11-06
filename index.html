@@ -374,6 +374,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .vsub small { font-weight: 400; color: var(--muted); font-size: 0.8rem; margin-left: 0.3rem; }
 .vopt.vpr[aria-pressed="true"] { background: var(--teamA-bg); color: var(--teamA-ink); border-color: var(--teamA); }
 .vchips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 0.8rem; }
+.side.A .tag { background: var(--teamA); color: var(--on-teamA); }
+.side.B .tag { background: var(--teamB); color: var(--on-teamB); }
+.side { gap: 0.5rem; }
+.thumb { white-space: nowrap; }
 .vchip { padding: 0.3rem 0.65rem; border-radius: 99px; background: var(--teamA-bg); color: var(--teamA-ink); font-weight: 700; font-size: 0.9rem; }
 .ti { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.14em; }
 :root { --thumb: #C2410C; --teamA: #FFD43B; --teamA-bg: #FFF1B8; --teamB: #FF8A2A; --on-teamB: #2B1300; --teamB-bg: #FFE2CB; --teamB-ink: #B24400; }
@@ -642,10 +646,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function outSidesHtml(m, thumbs) {
     function side(k, label) {
       var names = S.members.filter(function (x) { return m.outcomes[x.id] === k; }).sort(byName).map(function (x) {
-        var t = m.teams && m.teams[x.id];
-        return (t === "A" || t === "B" ? '<i class="dot ' + t + '" title="' + TEAM[t] + '"></i>' : "") + esc(x.name) + (thumbs ? thumbHtml(m.date, x.id) : "");
+        return esc(x.name) + (thumbs ? thumbHtml(m.date, x.id) : "");
       });
-      return '<div class="side ' + k + (k === "W" ? " won" : "") + '"><span class="tag">' + label + '</span><span class="names">' +
+      var cA = 0, cB = 0;
+      S.members.forEach(function (x) { if (m.outcomes[x.id] === k && m.teams) { if (m.teams[x.id] === "A") cA++; else if (m.teams[x.id] === "B") cB++; } });
+      var tc = cA > cB ? " A" : cB > cA ? " B" : "";
+      return '<div class="side ' + k + tc + (k === "W" ? " won" : "") + '"><span class="tag">' + label + '</span><span class="names">' +
         (names.length ? names.join(" · ") : "—") + "</span></div>";
     }
     function has(k) { return Object.keys(m.outcomes).some(function (id) { return m.outcomes[id] === k; }); }
