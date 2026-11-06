@@ -404,6 +404,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .tbadge { position: absolute; top: -5px; right: -3px; min-width: 1.15rem; height: 1.15rem; padding: 0 0.2rem; box-sizing: border-box; display: inline-grid; place-items: center; border-radius: 99px; font-size: 0.75rem; font-weight: 800; line-height: 1; color: #fff; border: 2px solid var(--bg, #fff); }
 .tbadge.q { background: #E07A00; }
 .tbadge.e { background: #D6372B; }
+.fm.tA { background: var(--teamA); color: var(--on-teamA); }
+.fm.tB { background: var(--teamB); color: var(--on-teamB); }
+.form { align-items: center; }
+.fl { align-self: center; margin-right: 0.3rem; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 .vsub .thumb { font-size: 1em; margin-left: 0; }
 .vopt .ti { vertical-align: -0.15em; }
 .tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -633,15 +637,15 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function compute() {
     var ms = sortedMatches(), R = S.rules;
     var rows = S.members.map(function (mb) {
-      var w = 0, d = 0, l = 0, pts = 0, form = [];
+      var w = 0, d = 0, l = 0, pts = 0, form = [], ft = [];
       ms.forEach(function (m) {
         var o = outcome(m, mb.id);
         if (o === "W") { w++; pts += num(R.win); }
         else if (o === "D") { d++; pts += num(R.draw); }
         else if (o === "L") { l++; pts += num(R.loss); }
-        form.push(o);
+        form.push(o); ft.push(m.teams && m.teams[mb.id]);
       });
-      return { id: mb.id, name: mb.name || "", active: mb.active !== false, w: w, d: d, l: l, pts: pts, att: w + d + l, form: form };
+      return { id: mb.id, name: mb.name || "", active: mb.active !== false, w: w, d: d, l: l, pts: pts, att: w + d + l, form: form, ft: ft };
     });
     var list = rows.filter(function (r) { return r.active || r.att > 0; });
     list.sort(function (a, b) { return b.pts - a.pts || b.att - a.att || b.w - a.w || byName(a, b); });
@@ -719,15 +723,17 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
     html += '<ol class="board">' + c.rows.map(function (r) {
       var lead = c.ms.length && r.rank === 1 && r.pts > 0;
-      var dots = r.form.slice(-5).map(function (o) {
+      var ftl = r.ft.slice(-5);
+      var dots = r.form.slice(-5).map(function (o, i) {
         var k = o === "W" ? ["w", "승"] : o === "D" ? ["d", "무"] : o === "L" ? ["l", "패"] : ["x", "–"];
-        return '<span class="fm ' + k[0] + '">' + k[1] + "</span>";
+        var tc = o && (ftl[i] === "A" || ftl[i] === "B") ? " t" + ftl[i] : "";
+        return '<span class="fm ' + k[0] + tc + '">' + k[1] + "</span>";
       }).join("");
       var label = r.form.slice(-5).map(function (o) { return o === "W" ? "승" : o === "D" ? "무" : o === "L" ? "패" : "결석"; }).join(" ");
       return '<li class="row' + (lead ? " lead" : "") + '"><span class="rk">' + r.rank + '</span><div class="who"><span class="nm">' + esc(r.name) +
         (lead ? '<span class="lead-tag">선두</span>' : "") + '</span><span class="sub">출석 ' + r.att + "/" + c.ms.length + " · " + r.w + "승 " + r.d + "무 " + r.l + "패" +
         (r.active ? "" : " · 휴식") + "</span></div>" +
-        (dots ? '<div class="form" role="img" aria-label="최근 경기: ' + label + '">' + dots + "</div>" : '<div class="form"></div>') +
+        (dots ? '<div class="form" role="img" aria-label="최근 경기: ' + label + '"><span class="fl">최근 경기</span>' + dots + "</div>" : '<div class="form"></div>') +
         '<div class="pts"><b>' + fmtN(r.pts) + "</b><small>승점</small></div></li>";
     }).join("") + "</ol>";
     box.innerHTML = html;
