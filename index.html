@@ -685,7 +685,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var c = compute(), html = voteBanner(), last = c.ms[c.ms.length - 1];
     if (last) {
       html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
-        "</b>" + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
+        "</b>" + '<span class="sub">' + matchCntText(last) + '</span></div><div class="sides">' + sidesHtml(last, true) + "</div></section>";
     }
     html += '<div class="sect-head"><h2>누적 승점</h2><p>이번 시즌 승점 레이스!! 동점이면 출석이 많은 순서입니다.</p></div>';
     if (!c.ms.length) {
@@ -1150,7 +1150,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       st.res[p.id] = res; delete st.resErr[p.id];
       var c2 = readCache(); c2[resKey(p)] = res; writeCache(c2);
     } catch (e) { st.resErr[p.id] = (e && e.code) || "net"; }
-    st.resBusy = false; renderMatches(); renderRecords(); renderVote();
+    st.resBusy = false; renderRank(); renderMatches(); renderRecords(); renderVote();
   }
   function syncResults() {
     var st = S.vote; if (!st.pollsLoaded || S.noDb || st.resBusy) return;
@@ -1170,7 +1170,13 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   }
   function thumbHtml(pollId, memberId) {
     var n = praiseOf(pollId, memberId);
-    return n ? ' <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + (n > 1 ? n : "") + "</span>" : "";
+    return n ? '<span class="thumb" title="칭찬 ' + n + '">(' + thumbIcon() + (n > 1 ? n : "") + ")</span>" : "";
+  }
+  function matchCntText(m) {
+    if (m.outcomes) return "참석 " + Object.keys(m.outcomes).filter(function (k) { return m.outcomes[k] === "W" || m.outcomes[k] === "D" || m.outcomes[k] === "L"; }).length + "명";
+    var a = Object.keys(m.teams || {}).filter(function (k) { return m.teams[k] === "A"; }).length;
+    var b = Object.keys(m.teams || {}).filter(function (k) { return m.teams[k] === "B"; }).length;
+    return a + " : " + b;
   }
   function thumbTotalHtml(memberId) {
     var n = praiseTotal(memberId);
@@ -1377,7 +1383,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }
       await S.db.doc("polls/" + p.id).delete();
       var c3 = readCache(); delete c3[resKey(p)]; writeCache(c3);
-      delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요"); renderMatches(); renderRecords();
+      delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요"); renderRank(); renderMatches(); renderRecords();
     } catch (e) { fail(e); }
   }
   async function copyVoteShare() {
