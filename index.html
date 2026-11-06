@@ -415,9 +415,9 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   <div class="wrap tabs-in" role="tablist">
     <button class="tab" role="tab" id="tab-rank" data-act="tab" data-tab="rank" aria-selected="true" type="button">순위</button>
     <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="false" type="button">경기</button>
-    <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석</button>
+    <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석부</button>
     <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">기록</button>
-    <button class="tab" role="tab" id="tab-vote" data-act="tab" data-tab="vote" aria-selected="false" type="button">투표</button>
+    <button class="tab" role="tab" id="tab-vote" data-act="tab" data-tab="vote" aria-selected="false" type="button">MOM투표</button>
     <button class="tab" role="tab" id="tab-members" data-act="tab" data-tab="members" aria-selected="false" type="button">멤버</button>
     <button class="tab" role="tab" id="tab-admin" data-act="tab" data-tab="admin" aria-selected="false" type="button" hidden>관리자</button>
   </div>
@@ -432,7 +432,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   </section>
 
   <section id="panel-attendance" role="tabpanel" aria-labelledby="tab-attendance" hidden>
-    <div class="sect-head"><h2>출석 현황</h2><p>칸의 숫자는 그날 받은 승점이에요. 날짜를 누르면 그날 기록을 고칠 수 있어요.</p></div>
+    <div class="sect-head"><h2>출석부</h2><p>칸의 숫자는 그날 받은 승점이에요. 날짜를 누르면 그날 기록을 고칠 수 있어요.</p></div>
     <div id="attBody"></div>
   </section>
 
@@ -667,7 +667,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var c = compute(), html = voteBanner(), last = c.ms[c.ms.length - 1];
     if (last) {
       html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
-        "</b>" + badgeHtml(last) + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
+        "</b>" + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
     }
     html += '<div class="sect-head"><h2>누적 승점</h2><p>' + ruleText() + " · 동점이면 출석이 많은 순서예요.</p></div>";
     if (!c.ms.length) {
@@ -703,7 +703,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         var b = Object.keys(m.teams).filter(function (k) { return m.teams[k] === "B"; }).length;
         cnt = a + " : " + b;
       }
-      return '<article class="match"><div class="match-top"><div><b class="md">' + fmtDate(m.date) + "</b>" + badgeHtml(m) +
+      return '<article class="match"><div class="match-top"><div><b class="md">' + fmtDate(m.date) + "</b>" +
         '<span class="sub">' + cnt + '</span></div><button class="btn small edit-only" type="button" data-act="edit" data-id="' + esc(m.id) + '">수정</button></div><div class="sides">' +
         sidesHtml(m) + "</div></article>";
     }).join("") + "</div>";
