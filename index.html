@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14532F">
+<title>FC 평풋 승점판</title>
+<meta name="description" content="FC 평풋 승점 · 출석 · 기록을 한눈에">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FC 평풋 승점판">
+<meta property="og:description" content="승점 · 출석 · 기록을 한눈에">
+<meta property="og:url" content="https://minkun-admin.github.io/fcpp/">
+<meta property="og:image" content="https://minkun-admin.github.io/fcpp/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FC 평풋">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 스코어보드형. 짙은 잔디색 헤더(분필 라인 장식) 아래에 탭, 본문은 한 줄씩 읽는 순위표.
+   팀 구분은 조끼 색(노랑 / 주황)으로만 하고, 포인트 컬러는 잔디 초록 하나. */
+:root {
+  --bg: #F2F5F0;
+  --surface: #FFFFFF;
+  --surface-2: #E6EDE4;
+  --ink: #15241A;
+  --muted: #5B6B60;
+  --line: #D3DCD2;
+  --pitch: #14532F;
+  --pitch-ink: #F1F7F2;
+  --accent: #1D7A42;
+  --on-accent: #FFFFFF;
+  --gold: #A87A12;
+  --teamA: #F2C230;
+  --on-teamA: #2A2200;
+  --teamA-bg: #FBF0C4;
+  --teamA-ink: #7A5A00;
+  --teamB: #C4590F;
+  --on-teamB: #FFFFFF;
+  --teamB-bg: #FBE3D0;
+  --teamB-ink: #A8470A;
+  --win: #17663A;
+  --win-bg: #D6EEDD;
+  --draw: #55645A;
+  --draw-bg: #E3E8E4;
+  --loss: #A33A30;
+  --loss-bg: #F6DAD6;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --font-display: "Black Han Sans", "Noto Sans KR", system-ui, sans-serif;
+  --font-body: "Noto Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1610;
+    --surface: #132219;
+    --surface-2: #1B3025;
+    --ink: #E6EFE8;
+    --muted: #8FA597;
+    --line: #243C2E;
+    --pitch: #0A2416;
+    --pitch-ink: #E9F3EC;
+    --accent: #46C06D;
+    --on-accent: #07210F;
+    --gold: #E3B341;
+    --teamA: #F5CF4A;
+    --on-teamA: #1F1900;
+    --teamA-bg: #3A3000;
+    --teamA-ink: #F5CF4A;
+    --teamB: #FF9A55;
+    --on-teamB: #1F0F05;
+    --teamB-bg: #4A2A12;
+    --teamB-ink: #FFA05C;
+    --win: #6FD890;
+    --win-bg: #1B3D29;
+    --draw: #A5B8AA;
+    --draw-bg: #243228;
+    --loss: #F29A91;
+    --loss-bg: #4A2420;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1610;
+  --surface: #132219;
+  --surface-2: #1B3025;
+  --ink: #E6EFE8;
+  --muted: #8FA597;
+  --line: #243C2E;
+  --pitch: #0A2416;
+  --pitch-ink: #E9F3EC;
+  --accent: #46C06D;
+  --on-accent: #07210F;
+  --gold: #E3B341;
+  --teamA: #F5CF4A;
+  --on-teamA: #1F1900;
+  --teamA-bg: #3A3000;
+  --teamA-ink: #F5CF4A;
+  --teamB: #FF9A55;
+  --on-teamB: #1F0F05;
+  --teamB-bg: #4A2A12;
+  --teamB-ink: #FFA05C;
+  --win: #6FD890;
+  --win-bg: #1B3D29;
+  --draw: #A5B8AA;
+  --draw-bg: #243228;
+  --loss: #F29A91;
+  --loss-bg: #4A2420;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100%;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--pitch);
+  z-index: 10;
+}
+body.locked { overflow: hidden; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* header */
+.top { position: relative; overflow: hidden; background: var(--pitch); color: var(--pitch-ink); }
+.chalk { position: absolute; right: -40px; top: -18px; width: 360px; max-width: none; opacity: 0.16; color: var(--pitch-ink); pointer-events: none; }
+.top-in { position: relative; padding-block: 1.1rem 1.2rem; }
+.top-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.eyebrow { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+h1 { margin: 0.1rem 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.05; letter-spacing: 0.01em; }
+.top-sub { margin: 0.55rem 0 0; font-size: 0.85rem; opacity: 0.85; }
+.top .btn.primary { background: var(--pitch-ink); color: var(--pitch); border-color: transparent; }
+
+/* tabs */
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.tabs-in { display: flex; }
+.tab { flex: 1; min-width: 0; background: none; border: 0; border-bottom: 3px solid transparent; padding: 0.8rem 0.25rem 0.65rem; font-weight: 500; color: var(--muted); }
+.tab[aria-selected="true"] { color: var(--ink); font-weight: 700; border-bottom-color: var(--accent); }
+
+main { padding-block: 1.1rem 3rem; }
+.sect-head { margin: 1.4rem 0 0.2rem; }
+.sect-head:first-child { margin-top: 0; }
+h2 { margin: 0; font-size: 1.05rem; }
+.sect-head p { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.82rem; }
+.empty { margin: 0; padding: 1.4rem 0; color: var(--muted); }
+.empty b { display: block; color: var(--ink); font-size: 1.05rem; margin-bottom: 0.2rem; }
+.empty .btn { margin-top: 0.8rem; }
+
+/* buttons & controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 40px; padding: 0.4rem 0.95rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn.small { min-height: 34px; padding: 0.2rem 0.7rem; font-size: 0.85rem; }
+.btn.danger[data-armed="1"] { background: var(--loss-bg); color: var(--loss); border-color: var(--loss); }
+.btn:disabled, input:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+input[type="text"], input[type="number"], input[type="date"], textarea {
+  width: 100%; min-height: 42px; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 16px;
+}
+textarea { resize: vertical; }
+label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+.ro .edit-only { display: none !important; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { min-width: 44px; min-height: 40px; padding: 0 0.7rem; border: 0; border-right: 1px solid var(--line); background: var(--surface); color: var(--muted); font-weight: 700; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { color: var(--ink); background: var(--surface-2); }
+.seg button[data-team="A"][aria-pressed="true"], .seg button[data-res="A"][aria-pressed="true"] { background: var(--teamA); color: var(--on-teamA); }
+.seg button[data-team="B"][aria-pressed="true"], .seg button[data-res="B"][aria-pressed="true"] { background: var(--teamB); color: var(--on-teamB); }
+.seg button[data-res="D"][aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg.wide { display: flex; }
+.seg.wide button { flex: 1; }
+
+/* leaderboard */
+.board { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; grid-template-areas: "rk who pts" "rk form pts"; column-gap: 0.5rem; row-gap: 0.4rem; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
+.rk { grid-area: rk; align-self: start; font-family: var(--font-display); font-size: 1.7rem; line-height: 1.1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row.lead .rk { color: var(--gold); }
+.who { grid-area: who; min-width: 0; }
+.nm { font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+.lead-tag { margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 4px; background: var(--surface-2); color: var(--gold); font-size: 0.72rem; font-weight: 700; vertical-align: 0.1em; }
+.sub { display: block; color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.form { grid-area: form; display: flex; gap: 3px; flex-wrap: wrap; }
+.fm { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
+.fm.w { background: var(--win-bg); color: var(--win); }
+.fm.d { background: var(--draw-bg); color: var(--draw); }
+.fm.l { background: var(--loss-bg); color: var(--loss); }
+.fm.x { border: 1px dashed var(--line); color: var(--muted); }
+.pts { grid-area: pts; text-align: right; }
+.pts b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.pts small { color: var(--muted); font-size: 0.72rem; }
+.row.lead .pts b { color: var(--accent); }
+@media (min-width: 640px) {
+  .row { grid-template-columns: 3rem minmax(0, 1fr) auto 5rem; grid-template-areas: "rk who form pts"; }
+  .form { flex-wrap: nowrap; }
+}
+
+/* match blocks */
+.latest, .match { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0.85rem 0.95rem; }
+.latest { margin-bottom: 0.4rem; }
+.latest-top, .match-top { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.latest-top .lbl { color: var(--muted); font-size: 0.82rem; }
+.match-top { justify-content: space-between; }
+.match-top > div { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.md { font-size: 1.05rem; }
+.res { padding: 0.05rem 0.55rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+.res.A { background: var(--teamA-bg); color: var(--teamA-ink); }
+.res.B { background: var(--teamB-bg); color: var(--teamB-ink); }
+.res.D { background: var(--draw-bg); color: var(--draw); }
+.sides { display: grid; gap: 0.45rem; margin-top: 0.65rem; }
+.side { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; align-items: baseline; font-size: 0.9rem; }
+.tag { display: inline-block; min-width: 3.4rem; padding: 0.02rem 0.5rem; border-radius: 4px; text-align: center; font-size: 0.78rem; font-weight: 700; }
+.side.A .tag { background: var(--teamA); color: var(--on-teamA); }
+.side.B .tag { background: var(--teamB); color: var(--on-teamB); }
+.names { overflow-wrap: anywhere; color: var(--muted); }
+.side.won .names { color: var(--ink); font-weight: 700; }
+.matches { display: grid; gap: 0.7rem; margin-top: 0.7rem; }
+
+/* attendance */
+.scroll { overflow-x: auto; margin-top: 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.att { border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+.att th, .att td { padding: 0.45rem 0.4rem; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.att tbody tr:last-child td, .att tbody tr:last-child th { border-bottom: 0; }
+.att .c1 { position: sticky; left: 0; z-index: 1; min-width: 5.4rem; padding-left: 0.8rem; text-align: left; background: var(--bg); border-right: 1px solid var(--line); font-weight: 700; }
+.att thead th { font-weight: 500; color: var(--muted); vertical-align: bottom; }
+.att thead .c1 { z-index: 2; }
+.att .dh { display: block; border: 0; background: none; padding: 0.1rem 0.2rem; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.att .dh span { display: block; font-size: 0.72rem; font-weight: 700; }
+.att .dh .A { color: var(--teamA-ink); }
+.att .dh .B { color: var(--teamB-ink); }
+.att .dh .D { color: var(--draw); }
+.att .rate { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ch { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ch.A { background: var(--teamA); color: var(--on-teamA); }
+.ch.B { background: var(--teamB); color: var(--on-teamB); }
+.ch.x { border: 1px dashed var(--line); color: var(--muted); font-weight: 400; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.7rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend .ch { width: 1.25rem; height: 1.25rem; font-size: 0.7rem; border-radius: 4px; }
+
+.side.W .tag { background: var(--win-bg); color: var(--win); }
+.side.L .tag { background: var(--loss-bg); color: var(--loss); }
+.ch.W { background: var(--win-bg); color: var(--win); }
+.ch.L { background: var(--loss-bg); color: var(--loss); }
+.ch.D { background: var(--draw-bg); color: var(--draw); }
+
+/* admin */
+.seg.big button { min-width: 64px; min-height: 44px; font-size: 1rem; }
+.seg button[data-out="W"][aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg button[data-out="L"][aria-pressed="true"] { background: var(--loss); color: var(--bg); }
+.seg button[data-out="D"][aria-pressed="true"] { background: var(--draw); color: var(--bg); }
+.side.D .tag { background: var(--draw-bg); color: var(--draw); }
+.rwho { display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex-wrap: wrap; }
+.seg.tiny button { min-width: 38px; min-height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
+.seg button[data-atm="A"][aria-pressed="true"] { background: var(--teamA); color: var(--on-teamA); }
+.seg button[data-atm="B"][aria-pressed="true"] { background: var(--teamB); color: var(--on-teamB); }
+.dot { display: inline-block; width: 0.6rem; height: 0.6rem; margin-right: 0.25rem; border-radius: 50%; vertical-align: 0.05em; }
+.dot.A { background: var(--teamA); }
+.dot.B { background: var(--teamB); }
+.ch.tA { box-shadow: inset 0 -4px 0 var(--teamA); }
+.ch.tB { box-shadow: inset 0 -4px 0 var(--teamB); }
+.admin-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; }
+.admin-bar .count { margin: 0; }
+.savebar { position: sticky; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+.savebar .grow { flex: 1; }
+
+/* records */
+.tab { font-size: 0.92rem; white-space: nowrap; }
+.recs { display: block; }
+.rec { border-bottom: 1px solid var(--line); }
+.rec summary { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto 1rem; gap: 0.5rem; align-items: center; padding: 0.8rem 0; list-style: none; cursor: pointer; }
+.rec summary::-webkit-details-marker { display: none; }
+.rec summary::after { content: ""; width: 0.5rem; height: 0.5rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); justify-self: center; margin-top: -0.2rem; }
+.rec[open] summary::after { transform: rotate(-135deg); margin-top: 0.2rem; }
+.rec .rk { grid-area: auto; align-self: center; font-size: 1.3rem; }
+.rec .who { grid-area: auto; min-width: 0; }
+.minis { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.mini { padding: 0 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mini.A { background: var(--teamA); color: var(--on-teamA); }
+.mini.B { background: var(--teamB); color: var(--on-teamB); }
+.mini.off { opacity: 0.45; }
+.rec-body { display: grid; gap: 1rem; padding: 0 0 1.1rem 2.7rem; }
+.rec-body h3 { margin: 0 0 0.4rem; font-size: 0.85rem; color: var(--muted); }
+.unis { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.uni { display: grid; gap: 0.3rem; align-content: start; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.uni.best { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.uni.off { opacity: 0.6; }
+.uni .big { font-family: var(--font-display); font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.uni .tag { justify-self: start; }
+.uni .best-tag { color: var(--accent); font-size: 0.78rem; font-weight: 700; }
+.bar { display: block; height: 0.4rem; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; }
+.bar i.A { background: var(--teamA); }
+.bar i.B { background: var(--teamB); }
+.bar i.W { background: var(--accent); }
+.mates { display: grid; gap: 0.65rem; margin: 0; padding: 0; list-style: none; }
+.mate { display: grid; grid-template-columns: 1.3rem minmax(0, 1fr) auto; gap: 0.15rem 0.5rem; align-items: baseline; }
+.mate .mk { grid-column: 1; grid-row: 1; font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mate .mn { grid-column: 2; grid-row: 1; }
+.mate .mp { grid-column: 3; grid-row: 1; }
+.mate .mr { grid-column: 2 / -1; grid-row: 2; }
+.mate .mn { font-weight: 700; overflow-wrap: anywhere; }
+.mate .mp { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mate .mr { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.mate .bar { grid-column: 2 / -1; grid-row: 3; }
+.mate.none .mn, .mate.none .mp { color: var(--muted); font-weight: 500; }
+.rec-empty { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+/* members */
+.panel-box { display: grid; gap: 0.8rem; margin-top: 0.7rem; }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.mlist { margin-top: 0.5rem; }
+.mrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem 0.6rem; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.mrow .mact { display: flex; align-items: center; gap: 0.5rem; }
+.mstat { color: var(--muted); font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mrow.rest input { color: var(--muted); }
+.note { margin: 0; padding: 0.7rem 0.85rem; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 0.85rem; }
+
+/* sheet */
+.overlay { position: fixed; inset: 0; z-index: 20; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { display: flex; flex-direction: column; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; background: var(--surface); border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25); outline: none; }
+.sheet-h, .sheet-b, .sheet-f { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.9rem 0.6rem; border-bottom: 1px solid var(--line); }
+.sheet-h h2 { font-size: 1.15rem; }
+.sheet-b { overflow-y: auto; padding-block: 0.9rem; display: grid; gap: 0.9rem; align-content: start; }
+.sheet-f { display: flex; gap: 0.6rem; padding-top: 0.7rem; padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
+.sheet-f .grow { flex: 1; }
+.roster-h { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.roster-h .acts { display: flex; gap: 0.4rem; }
+.rrow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
+.rrow .rn { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.count { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.warn { margin: 0; color: var(--loss); font-size: 0.82rem; }
+@media (min-width: 640px) {
+  .overlay { align-items: center; }
+  .sheet { border-radius: 14px; }
+}
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; max-width: calc(100% - 32px); padding: 0.6rem 1.1rem; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 0.9rem; font-weight: 700; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .tab { transition: color 0.15s, border-color 0.15s; }
+}
+.foot { display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 1.6rem 0 2rem; font-size: 0.82rem; color: var(--muted); }
+.linkbtn { background: none; border: 0; padding: 0.4rem 0.6rem; color: var(--muted); text-decoration: underline; font: inherit; cursor: pointer; }
+.sharebox { margin: 0; padding: 0.8rem 0.9rem; border-radius: 10px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.top-user { margin-top: 0.4rem; font-size: 0.78rem; opacity: 0.8; }
+#loginOv .sheet-b input[type="email"], #loginOv .sheet-b input[type="password"] { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.errline { margin: 0; color: var(--loss); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header class="top">
+  <svg class="chalk" viewBox="0 0 300 200" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <rect x="10" y="10" width="280" height="180"/>
+    <line x1="150" y1="10" x2="150" y2="190"/>
+    <circle cx="150" cy="100" r="36"/>
+    <circle cx="150" cy="100" r="2.5" fill="currentColor"/>
+    <rect x="10" y="55" width="44" height="90"/>
+    <rect x="246" y="55" width="44" height="90"/>
+  </svg>
+  <div class="wrap top-in">
+    <div class="top-row">
+      <div>
+        <p class="eyebrow" id="clubName">FC 평풋</p>
+        <h1>승점판</h1>
+      </div>    </div>  </div>
+</header>
+
+<nav class="tabs" aria-label="화면 선택">
+  <div class="wrap tabs-in" role="tablist">
+    <button class="tab" role="tab" id="tab-rank" data-act="tab" data-tab="rank" aria-selected="true" type="button">순위</button>
+    <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="false" type="button">경기</button>
+    <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석</button>
+    <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">기록</button>
+    <button class="tab" role="tab" id="tab-members" data-act="tab" data-tab="members" aria-selected="false" type="button">멤버</button>
+    <button class="tab" role="tab" id="tab-admin" data-act="tab" data-tab="admin" aria-selected="false" type="button" hidden>관리자</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section id="panel-rank" role="tabpanel" aria-labelledby="tab-rank"><div id="rankBody"></div></section>
+
+  <section id="panel-matches" role="tabpanel" aria-labelledby="tab-matches" hidden>
+    <div class="sect-head"><h2>경기 기록</h2><p>최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.</p></div>
+    <div id="matchBody"></div>
+  </section>
+
+  <section id="panel-attendance" role="tabpanel" aria-labelledby="tab-attendance" hidden>
+    <div class="sect-head"><h2>출석 현황</h2><p>칸의 숫자는 그날 받은 승점이에요. 날짜를 누르면 그날 기록을 고칠 수 있어요.</p></div>
+    <div id="attBody"></div>
+  </section>
+
+  <section id="panel-records" role="tabpanel" aria-labelledby="tab-records" hidden>
+    <div class="sect-head"><h2>개인 기록</h2><p id="recNote">이름을 누르면 유니폼 색별 승률과, 함께 뛰면 잘 이기는 팀원 순위가 펼쳐져요.</p></div>
+    <div id="recBody"></div>
+  </section>
+
+  <section id="panel-members" role="tabpanel" aria-labelledby="tab-members" hidden>
+    <p class="note" id="roNote" hidden>보기 전용이에요.</p>
+    <div class="sect-head"><h2>모임 설정</h2><p>모임 이름은 맨 위 제목에 표시돼요.</p></div>
+    <div class="panel-box">
+      <div>
+        <label class="fl" for="setName">모임 이름</label>
+        <input type="text" id="setName" maxlength="30" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="sect-head edit-only"><h2>멤버 추가</h2><p>쉼표나 줄바꿈으로 구분하면 여러 명을 한 번에 넣을 수 있어요.</p></div>
+    <div class="panel-box edit-only">
+      <div>
+        <label class="vh" for="addNames">추가할 이름</label>
+        <textarea id="addNames" rows="3" placeholder="예: 김민수, 박지훈, 이서준"></textarea>
+      </div>
+      <div><button class="btn primary" type="button" data-act="add-members">멤버 추가</button></div>
+    </div>
+
+    <div class="sect-head"><h2>멤버 목록</h2><p>쉬는 멤버는 새 경기 명단에서 빠지고, 지난 기록은 그대로 남아요.</p></div>
+    <div class="mlist" id="memberList"></div>
+
+    <div class="sect-head edit-only"><h2>백업</h2><p>기록은 Firebase 서버에 저장돼요. 혹시 모르니 가끔 파일로 내보내 두세요.</p></div>
+    <div class="panel-box edit-only">
+      <div class="btnrow">
+        <button class="btn" type="button" data-act="export">백업 파일 내보내기</button>
+        <button class="btn" type="button" data-act="import-pick">백업 파일 불러오기</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <p class="note">불러오면 같은 이름(날짜)의 기록은 파일 내용으로 덮어써요. 파일에 없는 기록은 지워지지 않아요.</p>
+    </div>
+  </section>
+
+  <section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" hidden>
+    <div class="sect-head"><h2>승패 직접 입력</h2><p>날짜를 고르고 멤버마다 승, 무, 패 중 하나를 눌러 저장해요. 무승부인 날은 참석한 멤버 모두 ‘무’를 누르면 돼요. 이름 옆 노랑·주황 버튼으로 그날의 팀도 남길 수 있어요. 다시 누르면 취소되고, 승·무·패를 안 누른 멤버는 결석이에요.</p></div>
+    <div class="panel-box">
+      <div>
+        <label class="fl" for="adminDate">경기 날짜</label>
+        <input type="date" id="adminDate">
+        <p class="count" id="adminWarn" hidden></p>
+      </div>
+    </div>
+    <div class="admin-bar">
+      <p class="count" id="adminCount" aria-live="polite"></p>
+      <button class="btn small" type="button" data-act="admin-clear">모두 비우기</button>
+    </div>
+    <div id="adminList"></div>
+    <div class="savebar">
+      <button class="btn danger" type="button" id="adminDel" data-act="admin-del" data-confirm="1" hidden>이 날짜 기록 삭제</button>
+      <span class="grow"></span>
+      <button class="btn primary" type="button" data-act="admin-save">저장</button>
+    </div>
+
+    <div class="sect-head" id="shareHead"><h2>카톡으로 공유</h2><p>저장한 뒤 복사 버튼을 누르고 단톡방에 붙여 넣으면 돼요. 가장 최근 경기 결과와 승점 TOP 5가 들어가요.</p></div>
+    <div class="panel-box">
+      <pre class="sharebox" id="sharePreview"></pre>
+      <div class="btnrow"><button class="btn primary" type="button" data-act="share-copy">카톡 공유 글 복사</button></div>
+    </div>
+  </section>
+  <footer class="foot" id="foot">
+    <button class="linkbtn" type="button" data-act="login-open" id="loginBtn">관리자 로그인</button>
+    <button class="linkbtn" type="button" data-act="logout" id="logoutBtn" hidden>로그아웃</button>
+  </footer>
+</main>
+
+<div class="overlay" id="loginOv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="loginTitle" tabindex="-1">
+    <div class="sheet-h">
+      <h2 id="loginTitle">관리자 로그인</h2>
+      <button class="btn small" type="button" data-act="login-close">닫기</button>
+    </div>
+    <form class="sheet-b" id="loginForm" autocomplete="on">
+      <div><label class="fl" for="loginEmail">이메일</label><input type="email" id="loginEmail" name="email" autocomplete="username" inputmode="email" required></div>
+      <div><label class="fl" for="loginPw">비밀번호</label><input type="password" id="loginPw" name="password" autocomplete="current-password" required></div>
+      <p class="errline" id="loginErr" hidden></p>
+      <button class="btn primary" type="submit" id="loginGo">로그인</button>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1">
+    <div class="sheet-h">
+      <h2 id="sheetTitle">경기 기록</h2>
+      <button class="btn small" type="button" data-act="sheet-close">닫기</button>
+    </div>
+    <div class="sheet-b" id="sheetBody"></div>
+    <div class="sheet-f" id="sheetFoot"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+  var DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  var TABS = ["rank", "matches", "attendance", "records", "members", "admin"];
+  var DEFAULT_RULES = { name: "FC 평풋", win: 3, draw: 1, loss: 0 };
+  var TEAM = { A: "노랑팀", B: "주황팀" };
+
+  var S = {
+    db: null, auth: null, noDb: false, readOnly: true, canKnown: true,
+    members: [], matches: [], rules: Object.assign({}, DEFAULT_RULES),
+    loaded: { m: false, x: false, r: false },
+    tab: "rank", sheet: null, pendingMembers: false, attScrolled: false,
+    admin: { date: "", outcomes: {}, teams: {}, existing: null, dirty: false }
+  };
+
+  function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  function fmtN(n) { return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+  function parseDate(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function fmtDate(s) { var d = parseDate(s); return (d.getMonth() + 1) + "/" + d.getDate() + "(" + DOW[d.getDay()] + ")"; }
+  function fmtShort(s) { var d = parseDate(s); return (d.getMonth() + 1) + "/" + d.getDate(); }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function byName(a, b) { return String(a.name).localeCompare(String(b.name), "ko"); }
+  function resLabel(r) { return r === "A" || r === "B" ? TEAM[r] + " 승" : "무승부"; }
+
+  /* ---------- data ---------- */
+  function sortedMatches() {
+    return S.matches.filter(function (m) { return m.date && (m.outcomes || (m.result && m.teams)); })
+      .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  }
+  function outcome(m, id) {
+    if (m.outcomes) {
+      var o = m.outcomes[id];
+      return o === "W" || o === "D" || o === "L" ? o : null;
+    }
+    var t = m.teams && m.teams[id];
+    if (!t) return null;
+    if (m.result === "D") return "D";
+    return m.result === t ? "W" : "L";
+  }
+  function compute() {
+    var ms = sortedMatches(), R = S.rules;
+    var rows = S.members.map(function (mb) {
+      var w = 0, d = 0, l = 0, pts = 0, form = [];
+      ms.forEach(function (m) {
+        var o = outcome(m, mb.id);
+        if (o === "W") { w++; pts += num(R.win); }
+        else if (o === "D") { d++; pts += num(R.draw); }
+        else if (o === "L") { l++; pts += num(R.loss); }
+        form.push(o);
+      });
+      return { id: mb.id, name: mb.name || "", active: mb.active !== false, w: w, d: d, l: l, pts: pts, att: w + d + l, form: form };
+    });
+    var list = rows.filter(function (r) { return r.active || r.att > 0; });
+    list.sort(function (a, b) { return b.pts - a.pts || b.att - a.att || b.w - a.w || byName(a, b); });
+    var prev = null, rank = 0;
+    list.forEach(function (r, i) {
+      if (!prev || prev.pts !== r.pts || prev.att !== r.att) rank = i + 1;
+      r.rank = rank; prev = r;
+    });
+    return { rows: list, ms: ms };
+  }
+  function teamNames(m, t) {
+    return S.members.filter(function (x) { return m.teams[x.id] === t; }).sort(byName).map(function (x) { return esc(x.name); });
+  }
+
+  /* ---------- render ---------- */
+  function ready() { return S.noDb || (S.loaded.m && S.loaded.x && S.loaded.r); }
+  function sideHtml(m, t) {
+    var names = teamNames(m, t);
+    return '<div class="side ' + t + (m.result === t ? " won" : "") + '"><span class="tag">' + TEAM[t] + '</span><span class="names">' +
+      (names.length ? names.join(" · ") : "—") + "</span></div>";
+  }
+  function outSidesHtml(m) {
+    function side(k, label) {
+      var names = S.members.filter(function (x) { return m.outcomes[x.id] === k; }).sort(byName).map(function (x) {
+        var t = m.teams && m.teams[x.id];
+        return (t === "A" || t === "B" ? '<i class="dot ' + t + '" title="' + TEAM[t] + '"></i>' : "") + esc(x.name);
+      });
+      return '<div class="side ' + k + (k === "W" ? " won" : "") + '"><span class="tag">' + label + '</span><span class="names">' +
+        (names.length ? names.join(" · ") : "—") + "</span></div>";
+    }
+    function has(k) { return Object.keys(m.outcomes).some(function (id) { return m.outcomes[id] === k; }); }
+    var hasD = has("D");
+    return (has("W") || !hasD ? side("W", "승") : "") + (hasD ? side("D", "무") : "") + (has("L") || !hasD ? side("L", "패") : "");
+  }
+  function sidesHtml(m) { return m.outcomes ? outSidesHtml(m) : sideHtml(m, "A") + sideHtml(m, "B"); }
+  function badgeHtml(m) {
+    if (m.outcomes) {
+      var w = 0, d = 0, l = 0;
+      Object.keys(m.outcomes).forEach(function (k) { if (m.outcomes[k] === "W") w++; else if (m.outcomes[k] === "D") d++; else if (m.outcomes[k] === "L") l++; });
+      return '<span class="res D">' + (d ? "무 " + d : "승 " + w + " · 패 " + l) + "</span>";
+    }
+    return '<span class="res ' + m.result + '">' + resLabel(m.result) + "</span>";
+  }
+  function emptyBlock(title, text, tab, btn) {
+    return '<div class="empty"><b>' + esc(title) + "</b>" + esc(text) +
+      (btn ? '<div><button class="btn primary" type="button" data-act="tab" data-tab="' + tab + '">' + esc(btn) + "</button></div>" : "") + "</div>";
+  }
+  function ruleText() {
+    var R = S.rules;
+    return "승 " + fmtN(num(R.win)) + " · 무 " + fmtN(num(R.draw)) + " · 패 " + fmtN(num(R.loss)) + " · 결석 0";
+  }
+
+  function renderHeader() {
+    $("#clubName").textContent = S.rules.name || DEFAULT_RULES.name;
+  }
+
+  function renderRank() {
+    var box = $("#rankBody");
+    if (S.noDb) { box.innerHTML = emptyBlock("연결하지 못했어요", "인터넷 연결을 확인하고 새로고침해 주세요."); return; }
+    if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    if (!S.members.length) {
+      box.innerHTML = emptyBlock("아직 멤버가 없어요", "멤버 탭에서 이름을 한 번에 추가할 수 있어요.", "members", S.readOnly ? "" : "멤버 추가하러 가기");
+      return;
+    }
+    var c = compute(), html = "", last = c.ms[c.ms.length - 1];
+    if (last) {
+      html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
+        "</b>" + badgeHtml(last) + '</div><div class="sides">' + sidesHtml(last) + "</div></section>";
+    }
+    html += '<div class="sect-head"><h2>누적 승점</h2><p>' + ruleText() + " · 동점이면 출석이 많은 순서예요.</p></div>";
+    if (!c.ms.length) {
+      html += emptyBlock("아직 경기 기록이 없어요", "첫 경기를 기록하면 순위가 만들어져요.");
+    }
+    html += '<ol class="board">' + c.rows.map(function (r) {
+      var lead = c.ms.length && r.rank === 1 && r.pts > 0;
+      var dots = r.form.slice(-5).map(function (o) {
+        var k = o === "W" ? ["w", "승"] : o === "D" ? ["d", "무"] : o === "L" ? ["l", "패"] : ["x", "–"];
+        return '<span class="fm ' + k[0] + '">' + k[1] + "</span>";
+      }).join("");
+      var label = r.form.slice(-5).map(function (o) { return o === "W" ? "승" : o === "D" ? "무" : o === "L" ? "패" : "결석"; }).join(" ");
+      return '<li class="row' + (lead ? " lead" : "") + '"><span class="rk">' + r.rank + '</span><div class="who"><span class="nm">' + esc(r.name) +
+        (lead ? '<span class="lead-tag">선두</span>' : "") + '</span><span class="sub">출석 ' + r.att + "/" + c.ms.length + " · " + r.w + "승 " + r.d + "무 " + r.l + "패" +
+        (r.active ? "" : " · 휴식") + "</span></div>" +
+        (dots ? '<div class="form" role="img" aria-label="최근 경기: ' + label + '">' + dots + "</div>" : '<div class="form"></div>') +
+        '<div class="pts"><b>' + fmtN(r.pts) + "</b><small>승점</small></div></li>";
+    }).join("") + "</ol>";
+    box.innerHTML = html;
+  }
+
+  function renderMatches() {
+    var box = $("#matchBody");
+    if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var ms = sortedMatches().slice().reverse();
+    if (!ms.length) { box.innerHTML = emptyBlock("아직 경기 기록이 없어요", S.readOnly ? "기록이 올라오면 여기에 보여요." : "관리자 탭에서 첫 경기를 기록해 보세요."); return; }
+    box.innerHTML = '<div class="matches">' + ms.map(function (m) {
+      var cnt;
+      if (m.outcomes) {
+        cnt = "참석 " + Object.keys(m.outcomes).filter(function (k) { return m.outcomes[k] === "W" || m.outcomes[k] === "D" || m.outcomes[k] === "L"; }).length + "명";
+      } else {
+        var a = Object.keys(m.teams).filter(function (k) { return m.teams[k] === "A"; }).length;
+        var b = Object.keys(m.teams).filter(function (k) { return m.teams[k] === "B"; }).length;
+        cnt = a + " : " + b;
+      }
+      return '<article class="match"><div class="match-top"><div><b class="md">' + fmtDate(m.date) + "</b>" + badgeHtml(m) +
+        '<span class="sub">' + cnt + '</span></div><button class="btn small edit-only" type="button" data-act="edit" data-id="' + esc(m.id) + '">수정</button></div><div class="sides">' +
+        sidesHtml(m) + "</div></article>";
+    }).join("") + "</div>";
+  }
+
+  function renderAtt() {
+    var box = $("#attBody");
+    if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var c = compute(), ms = c.ms;
+    if (!S.members.length || !ms.length) {
+      box.innerHTML = emptyBlock("보여줄 출석 기록이 없어요", "경기를 기록하면 멤버별 출석표가 만들어져요.");
+      return;
+    }
+    var rows = c.rows.slice().sort(byName);
+    var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + ms.map(function (m) {
+      return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
+        (m.outcomes ? '<span class="D">승패</span>' : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
+    }).join("") + "</tr>";
+    var body = rows.map(function (r) {
+      var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
+      return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + r.att + "/" + ms.length + " · " + pct + "%</td>" + ms.map(function (m) {
+        var o = outcome(m, r.id);
+        if (!o) return '<td><span class="ch x" aria-label="결석">–</span></td>';
+        var p = o === "W" ? num(S.rules.win) : o === "D" ? num(S.rules.draw) : num(S.rules.loss);
+        var cls = m.outcomes ? o : m.teams[r.id];
+        var who = m.outcomes ? (o === "W" ? "승" : o === "D" ? "무" : "패") : TEAM[cls];
+        var tt = m.outcomes && m.teams && m.teams[r.id];
+        if (tt === "A" || tt === "B") { cls += " t" + tt; who += " " + TEAM[tt]; }
+        return '<td><span class="ch ' + cls + '" aria-label="' + who + " " + fmtN(p) + '점">' + fmtN(p) + "</span></td>";
+      }).join("") + "</tr>";
+    }).join("");
+    box.innerHTML = '<div class="scroll" id="attScroll"><table class="att"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>" +
+      '<p class="legend"><span><span class="ch A">3</span> 노랑팀</span><span><span class="ch B">3</span> 주황팀</span><span><span class="ch W">3</span> 승(직접 입력)</span><span><span class="ch L">0</span> 패(직접 입력)</span><span><span class="ch x">–</span> 결석</span></p>';
+    if (S.tab === "attendance" && !S.attScrolled) { var sc = $("#attScroll"); sc.scrollLeft = sc.scrollWidth; S.attScrolled = true; }
+  }
+
+  /* ---------- 기록: 유니폼 색별 승률, 팀원별 승률 ---------- */
+  function pct(w, g) { return g ? Math.round(w / g * 100) : 0; }
+  function computeRecords() {
+    var c = compute(), st = {}, used = 0;
+    function blank() { return { g: 0, w: 0, d: 0, l: 0 }; }
+    S.members.forEach(function (m) { st[m.id] = { uni: { A: blank(), B: blank() }, mates: {}, g: 0, w: 0, d: 0, l: 0 }; });
+    c.ms.forEach(function (m) {
+      if (!m.teams) return;
+      var ids = Object.keys(m.teams).filter(function (id) {
+        return st[id] && (m.teams[id] === "A" || m.teams[id] === "B") && outcome(m, id);
+      });
+      if (!ids.length) return;
+      used++;
+      ids.forEach(function (id) {
+        var o = outcome(m, id), t = m.teams[id], k = o === "W" ? "w" : o === "D" ? "d" : "l";
+        st[id].uni[t].g++; st[id].uni[t][k]++; st[id].g++; st[id][k]++;
+        ids.forEach(function (oid) {
+          if (oid === id || m.teams[oid] !== t) return;
+          var mt = st[id].mates[oid] || (st[id].mates[oid] = blank());
+          mt.g++; mt[k]++;
+        });
+      });
+    });
+    return { rows: c.rows, st: st, total: c.ms.length, used: used };
+  }
+  function renderRecords() {
+    var box = $("#recBody"), note = $("#recNote");
+    if (S.noDb) { box.innerHTML = ""; return; }
+    if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var openIds = {};
+    box.querySelectorAll("details[open]").forEach(function (d) { openIds[d.dataset.id] = 1; });
+    if (!S.members.length) {
+      note.textContent = "";
+      box.innerHTML = emptyBlock("아직 멤버가 없어요", "멤버 탭에서 이름을 추가해 주세요.", "members", S.readOnly ? "" : "멤버 추가하러 가기");
+      return;
+    }
+    var R = computeRecords();
+    if (!R.used) {
+      note.textContent = "";
+      box.innerHTML = emptyBlock("팀이 기록된 경기가 아직 없어요", "관리자 탭에서 경기를 기록할 때 이름 옆 노랑·주황 버튼도 함께 눌러 주세요.");
+      return;
+    }
+    var skipped = R.total - R.used;
+    note.textContent = "팀이 기록된 " + R.used + "경기만 계산해요" + (skipped ? " (팀 기록이 없는 " + skipped + "경기는 빠져요)" : "") +
+      ". 승률은 승 ÷ 경기 수이고, 경기 수가 적을 때는 참고만 하세요.";
+    var nameOf = {}; S.members.forEach(function (m) { nameOf[m.id] = m.name; });
+    var UN = { A: "노랑", B: "주황" };
+
+    box.innerHTML = '<div class="recs">' + R.rows.map(function (r) {
+      var s = R.st[r.id], a = s.uni.A, b = s.uni.B, pa = pct(a.w, a.g), pb = pct(b.w, b.g);
+      var best = a.g && b.g ? (pa > pb ? "A" : pb > pa ? "B" : "") : "";
+      var mates = Object.keys(s.mates).map(function (id) {
+        var m = s.mates[id];
+        return { id: id, name: nameOf[id] || "(삭제된 멤버)", g: m.g, w: m.w, d: m.d, l: m.l, p: pct(m.w, m.g) };
+      }).sort(function (x, y) { return y.p - x.p || y.w - x.w || y.g - x.g || byName(x, y); });
+      var top = mates.filter(function (m) { return m.w > 0; }).slice(0, 5);
+
+      var minis = ["A", "B"].map(function (t) {
+        var u = s.uni[t];
+        return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
+      }).join("");
+      var sub = s.g ? "팀 기록 " + s.g + "경기 · " + s.w + "승 " + s.d + "무 " + s.l + "패" : "팀이 기록된 경기가 없어요";
+
+      function uniBox(t, u, p) {
+        if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
+        return '<div class="uni' + (best === t ? " best" : "") + '"><span class="side ' + t + '"><span class="tag">' + UN[t] + "팀</span></span>" +
+          '<span class="big">' + p + '%</span><span class="bar"><i class="' + t + '" style="width:' + p + '%"></i></span>' +
+          '<span class="sub">' + u.g + "경기 · " + u.w + "승 " + u.d + "무 " + u.l + "패</span>" +
+          (best === t ? '<span class="best-tag">이 유니폼일 때 승률이 더 좋아요</span>' : "") + "</div>";
+      }
+      var body;
+      if (!s.g) body = '<p class="rec-empty">팀이 기록된 경기에 나오면 여기에 보여요.</p>';
+      else {
+        body = '<div><h3>유니폼 색별 승률</h3><div class="unis">' + uniBox("A", a, pa) + uniBox("B", b, pb) + "</div></div>" +
+          "<div><h3>함께 뛰면 잘 이기는 팀원 (승률 순, 최대 5명)</h3>" + (top.length ? '<ol class="mates">' + top.map(function (m, i) {
+            return '<li class="mate"><span class="mk">' + (i + 1) + '</span><span class="mn">' + esc(m.name) + '</span><span class="mp">' + m.p + '%</span>' +
+              '<span class="mr">' + m.g + "경기 · " + m.w + "승 " + m.d + "무 " + m.l + "패</span>" +
+              '<span class="bar"><i class="W" style="width:' + m.p + '%"></i></span></li>';
+          }).join("") + "</ol>" : '<p class="rec-empty">아직 함께 이긴 팀원이 없어요.</p>') + "</div>";
+      }
+      return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
+        '</span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="sub">' + sub + '</span></span><span class="minis">' + minis +
+        '</span></summary><div class="rec-body">' + body + "</div></details>";
+    }).join("") + "</div>";
+  }
+
+  function renderMembers() {
+    var box = $("#memberList");
+    var ae = document.activeElement;
+    if (ae && box.contains(ae) && ae.tagName === "INPUT") { S.pendingMembers = true; return; }
+    S.pendingMembers = false;
+    if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    if (!S.members.length) { box.innerHTML = '<p class="empty">아직 멤버가 없어요.</p>'; return; }
+    var att = {};
+    compute().rows.forEach(function (r) { att[r.id] = r.att; });
+    var list = S.members.slice().sort(byName);
+    box.innerHTML = list.map(function (m) {
+      var a = att[m.id] || 0, active = m.active !== false, dis = S.readOnly ? " disabled" : "";
+      return '<div class="mrow' + (active ? "" : " rest") + '"><input type="text" value="' + esc(m.name) + '" maxlength="20" aria-label="이름" data-rename="' + esc(m.id) + '"' + dis + ">" +
+        '<div class="mact"><span class="mstat">출석 ' + a + '</span><button class="btn small edit-only" type="button" data-act="toggle-active" data-id="' + esc(m.id) + '" aria-pressed="' + active + '">' + (active ? "활동 중" : "휴식 중") + "</button>" +
+        (a === 0 ? '<button class="btn small danger edit-only" type="button" data-act="del-member" data-id="' + esc(m.id) + '" data-confirm="1">삭제</button>' : "") + "</div></div>";
+    }).join("");
+  }
+
+  function syncSettings() {
+    var map = { setName: S.rules.name };
+    Object.keys(map).forEach(function (id) {
+      var el = $("#" + id);
+      el.disabled = S.readOnly || !S.db;
+      if (document.activeElement !== el) el.value = map[id] == null ? "" : map[id];
+    });
+    $("#roNote").hidden = !S.readOnly;
+  }
+
+  function render() {
+    document.documentElement.classList.toggle("ro", S.readOnly);
+    $("#tab-admin").hidden = S.readOnly;
+    if (S.readOnly && S.tab === "admin") setTab("rank");
+    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare();
+  }
+
+  /* ---------- tabs ---------- */
+  function setTab(t, fromHash) {
+    if (TABS.indexOf(t) < 0) t = "rank";
+    if (t === "admin" && S.readOnly) t = "rank";
+    S.tab = t;
+    TABS.forEach(function (k) {
+      $("#panel-" + k).hidden = k !== t;
+      $("#tab-" + k).setAttribute("aria-selected", String(k === t));
+    });
+    if (!fromHash && location.hash.slice(1) !== t) location.hash = t;
+    if (t === "attendance") { S.attScrolled = false; renderAtt(); }
+    if (t === "admin") renderAdmin(false);
+    window.scrollTo(0, 0);
+  }
+
+
+  /* ---------- Firebase ---------- */
+  var APP_ID = "fcpp-scoreboard";
+  var SITE_URL = "https://minkun-admin.github.io/fcpp/";
+  var FIREBASE_CONFIG = {
+    "apiKey": "AIzaSyCNYW9qnys7Rb0NSd_Yjqlc6BXqSt5iw6U",
+    "authDomain": "fcpp-901ac.firebaseapp.com",
+    "projectId": "fcpp-901ac",
+    "storageBucket": "fcpp-901ac.firebasestorage.app",
+    "messagingSenderId": "58829644257",
+    "appId": "1:58829644257:web:9de8133f429c5fad23b2a0"
+};
+  var WRITE_TIMEOUT = 10000;
+
+  function withTimeout(p) {
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject({ code: "timeout" }); }, WRITE_TIMEOUT);
+      p.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+    });
+  }
+  function createFirestoreDb(fs) {
+    function docRef(path) {
+      var r = fs.doc(path);
+      return {
+        id: r.id,
+        set: function (d) { return withTimeout(r.set(d)); },
+        update: function (d) { return withTimeout(r.update(d)); },
+        delete: function () { return withTimeout(r.delete()); },
+        onSnapshot: function (next, err) { return r.onSnapshot(next, err); }
+      };
+    }
+    return {
+      fs: fs,
+      doc: docRef,
+      collection: function (col) {
+        var c = fs.collection(col);
+        return {
+          add: function (d) { return withTimeout(c.add(d)); },
+          onSnapshot: function (next, err) { return c.onSnapshot(next, err); }
+        };
+      }
+    };
+  }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function exportBackup() {
+    var members = {}, matches = {};
+    S.members.forEach(function (m) { members[m.id] = { name: m.name, active: m.active !== false, order: m.order || 0 }; });
+    S.matches.forEach(function (m) { var o = Object.assign({}, m); delete o.id; matches[m.id] = o; });
+    var json = JSON.stringify({ app: APP_ID, version: 1, exportedAt: new Date().toISOString(),
+      data: { members: members, matches: matches, settings: { rules: S.rules } } }, null, 2);
+    var d = new Date(), name = "fcpp-backup-" + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + ".json";
+    var url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    var a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast("백업 파일을 내보냈어요");
+  }
+  function importBackup(file) {
+    if (!file || S.readOnly || !S.db) return;
+    var fr = new FileReader();
+    fr.onload = async function () {
+      var o; try { o = JSON.parse(String(fr.result)); } catch (e) { o = null; }
+      if (!o || o.app !== APP_ID || !o.data || typeof o.data !== "object") { toast("이 앱에서 내보낸 백업 파일이 아니에요"); return; }
+      var d = o.data, ops = [], nm = 0, nx = 0;
+      Object.keys(d.members || {}).forEach(function (id) { var v = d.members[id]; if (v && v.name) { ops.push(["members/" + id, { name: String(v.name).slice(0, 20), active: v.active !== false, order: Number(v.order) || 0 }]); nm++; } });
+      Object.keys(d.matches || {}).forEach(function (id) { var v = d.matches[id]; if (v && v.date) { ops.push(["matches/" + id, v]); nx++; } });
+      var r = d.settings && d.settings.rules;
+      if (r) ops.push(["settings/rules", { name: String(r.name || DEFAULT_RULES.name).slice(0, 30), win: num(r.win), draw: num(r.draw), loss: num(r.loss) }]);
+      if (!ops.length) { toast("불러올 기록이 없어요"); return; }
+      try {
+        var fs = S.db.fs;
+        for (var i = 0; i < ops.length; i += 400) {
+          var b = fs.batch();
+          ops.slice(i, i + 400).forEach(function (op) { b.set(fs.doc(op[0]), op[1]); });
+          await withTimeout(b.commit());
+        }
+        toast("불러왔어요 (멤버 " + nm + "명 · 경기 " + nx + "개)");
+      } catch (e) { fail(e); }
+    };
+    fr.onerror = function () { toast("파일을 읽지 못했어요"); };
+    fr.readAsText(file);
+  }
+
+  /* ---------- 로그인 ---------- */
+  function openLogin() {
+    $("#loginOv").hidden = false; $("#loginErr").hidden = true;
+    setTimeout(function () { $("#loginEmail").focus(); }, 30);
+  }
+  function closeLogin() { $("#loginOv").hidden = true; $("#loginPw").value = ""; }
+  function authMsg(e) {
+    var c = e && e.code || "";
+    if (c === "auth/invalid-credential" || c === "auth/wrong-password" || c === "auth/user-not-found" || c === "auth/invalid-email") return "이메일이나 비밀번호가 맞지 않아요";
+    if (c === "auth/too-many-requests") return "시도가 너무 많아요. 잠시 후 다시 해보세요";
+    if (c === "auth/network-request-failed") return "인터넷 연결을 확인해 주세요";
+    return "로그인하지 못했어요 (" + (c || "오류") + ")";
+  }
+  async function doLogin(ev) {
+    ev.preventDefault();
+    var btn = $("#loginGo"), err = $("#loginErr");
+    btn.disabled = true; err.hidden = true;
+    try {
+      await S.auth.signInWithEmailAndPassword($("#loginEmail").value.trim(), $("#loginPw").value);
+      closeLogin(); toast("관리자로 로그인했어요");
+    } catch (e) { err.textContent = authMsg(e); err.hidden = false; }
+    btn.disabled = false;
+  }
+  async function doLogout() { try { await S.auth.signOut(); toast("로그아웃했어요"); } catch (e) { toast("로그아웃하지 못했어요"); } }
+  function syncAuthUi() {
+    $("#loginBtn").hidden = !S.readOnly;
+    $("#logoutBtn").hidden = S.readOnly;
+  }
+
+  /* ---------- 카톡 공유 글 ---------- */
+  function siteUrl() { return /^https?:/.test(location.protocol) ? location.origin + location.pathname.replace(/index\.html$/, "") : SITE_URL; }
+  function matchSummary(m) {
+    var w = 0, l = 0, d = 0, att = 0, tw = {};
+    if (m.outcomes) {
+      Object.keys(m.outcomes).forEach(function (id) {
+        var o = m.outcomes[id], t = m.teams && m.teams[id];
+        if (o === "W") { w++; att++; if (t === "A" || t === "B") tw[t] = (tw[t] || 0) + 1; }
+        else if (o === "L") { l++; att++; }
+        else if (o === "D") { d++; att++; }
+      });
+      if (d && !w && !l) return { line: "무승부", att: att };
+      if (tw.A && !tw.B) return { line: TEAM.A + " 승", att: att };
+      if (tw.B && !tw.A) return { line: TEAM.B + " 승", att: att };
+      return { line: "승 " + w + " · 패 " + l + (d ? " · 무 " + d : ""), att: att };
+    }
+    return { line: resLabel(m.result), att: Object.keys(m.teams || {}).length };
+  }
+  function shareText() {
+    if (!ready()) return "";
+    var c = compute(), last = c.ms[c.ms.length - 1];
+    if (!last) return "";
+    var sm = matchSummary(last), medals = ["🥇", "🥈", "🥉"];
+    var top = c.rows.slice(0, 5).map(function (r, i) {
+      return (r.rank <= 3 ? medals[r.rank - 1] : String(r.rank)) + " " + r.name + " " + fmtN(r.pts) + "점";
+    });
+    return "⚽ " + (S.rules.name || DEFAULT_RULES.name) + " " + fmtDate(last.date) + " 결과\n" +
+      sm.line + " · " + sm.att + "명 참석\n\n" +
+      "🏆 승점 순위 TOP 5\n" + top.join("\n") + "\n\n" +
+      "📱 전체 기록 보기\n" + siteUrl();
+  }
+  function syncShare() {
+    var el = $("#sharePreview"); if (!el) return;
+    el.textContent = shareText() || "경기 기록을 저장하면 공유할 글이 여기에 만들어져요.";
+  }
+  async function copyShare() {
+    var t = shareText();
+    if (!t) { toast("먼저 경기 기록을 저장해 주세요"); return; }
+    try { await navigator.clipboard.writeText(t); toast("복사했어요. 카톡 단톡방에 붙여 넣으세요"); return; } catch (e) {}
+    var ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove();
+    toast(ok ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
+  }
+
+  /* ---------- toast & errors ---------- */
+  var toastTimer;
+  function toast(msg) {
+    var el = $("#toast"); el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 2800);
+  }
+  function fail(e) {
+    var c = e && e.code;
+    if (c === "permission-denied") toast("저장 권한이 없어요. 관리자로 다시 로그인해 주세요");
+    else if (c === "timeout" || c === "unavailable") toast("인터넷 연결을 확인해 주세요. 연결되면 자동으로 저장돼요");
+    else if (c === "resource-exhausted") toast("오늘 사용 한도를 넘었어요. 내일 다시 시도해 주세요");
+    else toast("저장하지 못했어요. 잠시 후 다시 시도해 주세요");
+  }
+
+  /* ---------- match sheet ---------- */
+  function rosterIds(sh) {
+    var ids = {};
+    S.members.forEach(function (m) { if (m.active !== false) ids[m.id] = 1; });
+    Object.keys(sh.teams).forEach(function (k) { ids[k] = 1; });
+    return S.members.filter(function (m) { return ids[m.id]; }).sort(byName);
+  }
+  function openSheet(id) {
+    if (S.readOnly || !S.db) return;
+    if (!S.members.length) { toast("먼저 멤버를 추가해 주세요"); setTab("members"); return; }
+    var m = id ? S.matches.filter(function (x) { return x.id === id; })[0] : null;
+    S.sheet = { id: m ? m.id : null, date: m ? m.date : todayStr(), result: m ? m.result : "", teams: Object.assign({}, m ? m.teams : {}) };
+    var sh = S.sheet, roster = rosterIds(sh);
+    var hasPrev = sortedMatches().some(function (x) { return x.id !== sh.id; });
+    $("#sheetTitle").textContent = m ? "경기 수정" : "경기 기록";
+    $("#sheetBody").innerHTML =
+      '<div><label class="fl" for="mDate">경기 날짜</label><input type="date" id="mDate" value="' + esc(sh.date) + '"><p class="warn" id="mDup" hidden>이 날짜 기록이 이미 있어요. 저장하면 덮어써요.</p></div>' +
+      '<div><span class="fl" id="resLbl">경기 결과</span><div class="seg wide" role="group" aria-labelledby="resLbl">' +
+      '<button type="button" data-res="A" aria-pressed="false">노랑팀 승</button><button type="button" data-res="D" aria-pressed="false">무승부</button><button type="button" data-res="B" aria-pressed="false">주황팀 승</button></div></div>' +
+      '<div><div class="roster-h"><span class="fl" style="margin:0">뛴 팀 선택</span><div class="acts">' +
+      (hasPrev ? '<button class="btn small" type="button" data-act="copy-last">지난 경기 불러오기</button>' : "") +
+      '<button class="btn small" type="button" data-act="all-absent">전원 결석</button></div></div>' +
+      '<div id="roster">' + roster.map(function (r) {
+        return '<div class="rrow" data-id="' + esc(r.id) + '"><span class="rn">' + esc(r.name) + '</span><div class="seg" role="group" aria-label="' + esc(r.name) + ' 팀">' +
+          '<button type="button" data-team="A" aria-pressed="false">노랑</button><button type="button" data-team="B" aria-pressed="false">주황</button><button type="button" data-team="" aria-pressed="false">결석</button></div></div>';
+      }).join("") + '</div><p class="count" id="mCount"></p></div>';
+    $("#sheetFoot").innerHTML =
+      (m ? '<button class="btn danger" type="button" data-act="sheet-del" data-confirm="1">삭제</button>' : "") +
+      '<span class="grow"></span><button class="btn" type="button" data-act="sheet-close">취소</button><button class="btn primary" type="button" data-act="sheet-save">저장</button>';
+    syncSheet();
+    $("#overlay").hidden = false;
+    document.body.classList.add("locked");
+    $("#sheet").focus();
+  }
+  function syncSheet() {
+    var sh = S.sheet; if (!sh) return;
+    document.querySelectorAll("#sheetBody [data-res]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.res === sh.result)); });
+    document.querySelectorAll("#roster .rrow").forEach(function (row) {
+      var cur = sh.teams[row.dataset.id] || "";
+      row.querySelectorAll("[data-team]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.team === cur)); });
+    });
+    var a = 0, b = 0, x = 0;
+    document.querySelectorAll("#roster .rrow").forEach(function (row) {
+      var t = sh.teams[row.dataset.id]; if (t === "A") a++; else if (t === "B") b++; else x++;
+    });
+    $("#mCount").textContent = TEAM.A + " " + a + "명 · " + TEAM.B + " " + b + "명 · 결석 " + x + "명" + ((a || b) && a !== b ? " (인원이 달라요)" : "");
+    var dup = S.matches.some(function (m) { return m.date === sh.date && m.id !== sh.id; });
+    $("#mDup").hidden = !dup;
+  }
+  function closeSheet() {
+    S.sheet = null; $("#overlay").hidden = true; document.body.classList.remove("locked");
+  }
+  async function saveSheet() {
+    var sh = S.sheet; if (!sh) return;
+    if (!sh.date) { toast("날짜를 선택해 주세요"); return; }
+    if (!sh.result) { toast("경기 결과를 선택해 주세요"); return; }
+    var teams = {};
+    Object.keys(sh.teams).forEach(function (k) { if (sh.teams[k] === "A" || sh.teams[k] === "B") teams[k] = sh.teams[k]; });
+    if (!Object.keys(teams).length) { toast("뛴 사람을 한 명 이상 선택해 주세요"); return; }
+    try {
+      await S.db.doc("matches/" + sh.date).set({ date: sh.date, result: sh.result, teams: teams, updatedAt: Date.now() });
+      if (sh.id && sh.id !== sh.date) await S.db.doc("matches/" + sh.id).delete();
+      closeSheet(); toast("저장했어요");
+    } catch (e) { fail(e); }
+  }
+  async function deleteMatch() {
+    var sh = S.sheet; if (!sh || !sh.id) return;
+    try { await S.db.doc("matches/" + sh.id).delete(); closeSheet(); toast("삭제했어요"); } catch (e) { fail(e); }
+  }
+
+  /* ---------- members & rules ---------- */
+  async function addMembers() {
+    var ta = $("#addNames");
+    var names = ta.value.split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    var have = {}; S.members.forEach(function (m) { have[m.name] = 1; });
+    var fresh = []; names.forEach(function (n) { if (!have[n] && fresh.indexOf(n) < 0) fresh.push(n); });
+    if (!fresh.length) { toast(names.length ? "이미 있는 이름이에요" : "이름을 입력해 주세요"); return; }
+    try {
+      for (var i = 0; i < fresh.length; i++) {
+        await S.db.collection("members").add({ name: fresh[i].slice(0, 20), active: true, order: Date.now() + i });
+      }
+      ta.value = ""; toast(fresh.length + "명을 추가했어요");
+    } catch (e) { fail(e); }
+  }
+  async function saveRule(key, val) {
+    var next = Object.assign({}, S.rules); next[key] = val;
+    try { await S.db.doc("settings/rules").set({ name: next.name, win: next.win, draw: next.draw, loss: next.loss }); }
+    catch (e) { fail(e); syncSettings(); }
+  }
+
+  /* ---------- admin: 승패 직접 입력 ---------- */
+  function adminRoster() {
+    var ids = {};
+    S.members.forEach(function (m) { if (m.active !== false) ids[m.id] = 1; });
+    Object.keys(S.admin.outcomes).forEach(function (k) { ids[k] = 1; });
+    Object.keys(S.admin.teams).forEach(function (k) { ids[k] = 1; });
+    return S.members.filter(function (m) { return ids[m.id]; }).sort(byName);
+  }
+  function adminLoad() {
+    var ad = S.admin, m = S.matches.filter(function (x) { return x.id === ad.date; })[0];
+    ad.outcomes = {}; ad.teams = {}; ad.existing = m ? (m.outcomes ? "direct" : "team") : null;
+    if (m) S.members.forEach(function (mb) {
+      var o = outcome(m, mb.id);
+      if (o === "W" || o === "D" || o === "L") ad.outcomes[mb.id] = o;
+      var t = m.teams && m.teams[mb.id];
+      if (o && (t === "A" || t === "B")) ad.teams[mb.id] = t;
+    });
+  }
+  function renderAdmin(force) {
+    if (S.readOnly) return;
+    var ad = S.admin, list = $("#adminList");
+    if (!ready()) { list.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var dateEl = $("#adminDate");
+    if (document.activeElement !== dateEl) dateEl.value = ad.date;
+    if (ad.dirty && !force) { syncAdmin(); return; }
+    adminLoad();
+    var roster = adminRoster();
+    if (!roster.length) {
+      list.innerHTML = '<p class="empty">아직 멤버가 없어요. 멤버 탭에서 먼저 추가해 주세요.</p>';
+      syncAdmin(); return;
+    }
+    list.innerHTML = roster.map(function (r) {
+      return '<div class="rrow" data-id="' + esc(r.id) + '"><div class="rwho"><span class="rn">' + esc(r.name) + '</span><div class="seg tiny" role="group" aria-label="' + esc(r.name) + ' 팀">' +
+        '<button type="button" data-atm="A" aria-pressed="false">노랑</button><button type="button" data-atm="B" aria-pressed="false">주황</button></div></div>' +
+        '<div class="seg big" role="group" aria-label="' + esc(r.name) + ' 결과">' +
+        '<button type="button" data-out="W" aria-pressed="false">승</button><button type="button" data-out="D" aria-pressed="false">무</button><button type="button" data-out="L" aria-pressed="false">패</button></div></div>';
+    }).join("");
+    syncAdmin();
+  }
+  function syncAdmin() {
+    var ad = S.admin, w = 0, d = 0, l = 0, total = 0, ta = 0, tb = 0;
+    document.querySelectorAll("#adminList .rrow").forEach(function (row) {
+      var id = row.dataset.id, o = ad.outcomes[id] || "", t = ad.teams[id] || "";
+      total++; if (o === "W") w++; else if (o === "D") d++; else if (o === "L") l++;
+      if (o) { if (t === "A") ta++; else if (t === "B") tb++; }
+      row.querySelectorAll("[data-out]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.out === o)); });
+      row.querySelectorAll("[data-atm]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.atm === t)); });
+    });
+    $("#adminCount").textContent = "승 " + w + " · 무 " + d + " · 패 " + l + " · 결석 " + (total - w - d - l) + " · " + TEAM.A + " " + ta + " · " + TEAM.B + " " + tb;
+    var warn = $("#adminWarn");
+    if (ad.existing === "team") {
+      warn.hidden = false; warn.className = "warn";
+      warn.textContent = "이 날짜에는 팀 방식으로 기록한 경기가 있어요. 저장하면 승/무/패 방식으로 바뀌어요. 승점은 그대로 계산돼요.";
+    } else if (ad.existing === "direct") {
+      warn.hidden = false; warn.className = "count"; warn.textContent = "이 날짜에 저장된 기록을 수정하고 있어요.";
+    } else warn.hidden = true;
+    $("#adminDel").hidden = !ad.existing;
+  }
+  function adminTeam(btn) {
+    var ad = S.admin, id = btn.closest(".rrow").dataset.id, t = btn.dataset.atm;
+    if (ad.teams[id] === t) delete ad.teams[id]; else ad.teams[id] = t;
+    ad.dirty = true; syncAdmin();
+  }
+  function adminPick(btn) {
+    var ad = S.admin, id = btn.closest(".rrow").dataset.id, o = btn.dataset.out;
+    if (ad.outcomes[id] === o) delete ad.outcomes[id]; else ad.outcomes[id] = o;
+    ad.dirty = true; syncAdmin();
+  }
+  async function adminSave() {
+    var ad = S.admin;
+    if (!ad.date) { toast("날짜를 선택해 주세요"); return; }
+    var out = {};
+    Object.keys(ad.outcomes).forEach(function (k) { var v = ad.outcomes[k]; if (v === "W" || v === "D" || v === "L") out[k] = v; });
+    if (!Object.keys(out).length) { toast("승, 무, 패 중 하나를 한 명 이상 눌러 주세요"); return; }
+    var tm = {};
+    Object.keys(out).forEach(function (k) { if (ad.teams[k] === "A" || ad.teams[k] === "B") tm[k] = ad.teams[k]; });
+    try {
+      await S.db.doc("matches/" + ad.date).set({ date: ad.date, outcomes: out, teams: tm, updatedAt: Date.now() });
+      ad.dirty = false; toast("저장했어요. 아래에서 카톡 공유 글을 복사하세요");
+      setTimeout(function () { syncShare(); var h = $("#shareHead"); if (h) h.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350);
+    } catch (e) { fail(e); }
+  }
+  async function adminDelete() {
+    var ad = S.admin; if (!ad.existing) return;
+    try { await S.db.doc("matches/" + ad.date).delete(); ad.dirty = false; toast("삭제했어요"); } catch (e) { fail(e); }
+  }
+  function editMatch(id) {
+    if (S.readOnly) return;
+    var m = S.matches.filter(function (x) { return x.id === id; })[0];
+    if (m && m.outcomes) { S.admin.date = m.date; S.admin.dirty = false; setTab("admin"); renderAdmin(true); }
+    else openSheet(id);
+  }
+
+  /* ---------- events ---------- */
+  var armTimer;
+  function confirmed(btn) {
+    if (!btn.dataset.confirm) return true;
+    if (btn.dataset.armed === "1") return true;
+    btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "한 번 더 누르면 삭제";
+    clearTimeout(armTimer);
+    armTimer = setTimeout(function () { btn.dataset.armed = ""; if (btn.dataset.label) btn.textContent = btn.dataset.label; }, 3500);
+    return false;
+  }
+  document.addEventListener("click", async function (ev) {
+    var t = ev.target;
+    if (t.id === "overlay") { closeSheet(); return; }
+    if (t.id === "loginOv") { closeLogin(); return; }
+    var ob = t.closest("[data-out]");
+    if (ob) { adminPick(ob); return; }
+    var atm = t.closest("[data-atm]");
+    if (atm) { adminTeam(atm); return; }
+    var res = t.closest("[data-res]");
+    if (res && S.sheet) { S.sheet.result = res.dataset.res; syncSheet(); return; }
+    var tb = t.closest("[data-team]");
+    if (tb && S.sheet) {
+      var id = tb.closest(".rrow").dataset.id;
+      if (tb.dataset.team) S.sheet.teams[id] = tb.dataset.team; else delete S.sheet.teams[id];
+      syncSheet(); return;
+    }
+    var btn = t.closest("[data-act]"); if (!btn) return;
+    var act = btn.dataset.act;
+    if (act === "tab") setTab(btn.dataset.tab);
+    else if (act === "new") openSheet(null);
+    else if (act === "edit") editMatch(btn.dataset.id);
+    else if (act === "admin-save") adminSave();
+    else if (act === "admin-clear") { S.admin.outcomes = {}; S.admin.teams = {}; S.admin.dirty = true; syncAdmin(); }
+    else if (act === "admin-del") { if (confirmed(btn)) adminDelete(); }
+    else if (act === "sheet-close") closeSheet();
+    else if (act === "sheet-save") saveSheet();
+    else if (act === "sheet-del") { if (confirmed(btn)) deleteMatch(); }
+    else if (act === "all-absent") { S.sheet.teams = {}; syncSheet(); }
+    else if (act === "copy-last") {
+      var prev = sortedMatches().filter(function (x) { return x.id !== S.sheet.id; }).pop();
+      if (prev) {
+        var ids = {}; document.querySelectorAll("#roster .rrow").forEach(function (r) { ids[r.dataset.id] = 1; });
+        var next = {}; Object.keys(prev.teams).forEach(function (k) { if (ids[k]) next[k] = prev.teams[k]; });
+        S.sheet.teams = next; syncSheet();
+      }
+    }
+    else if (act === "add-members") addMembers();
+    else if (act === "login-open") openLogin();
+    else if (act === "login-close") closeLogin();
+    else if (act === "logout") doLogout();
+    else if (act === "export") exportBackup();
+    else if (act === "import-pick") $("#importFile").click();
+    else if (act === "share-copy") copyShare();
+    else if (act === "toggle-active") {
+      var m = S.members.filter(function (x) { return x.id === btn.dataset.id; })[0]; if (!m) return;
+      try { await S.db.doc("members/" + m.id).update({ active: m.active === false }); } catch (e) { fail(e); }
+    }
+    else if (act === "del-member") {
+      if (!confirmed(btn)) return;
+      try { await S.db.doc("members/" + btn.dataset.id).delete(); toast("삭제했어요"); } catch (e) { fail(e); }
+    }
+  });
+  document.addEventListener("input", function (ev) {
+    if (ev.target.id === "mDate" && S.sheet) { S.sheet.date = ev.target.value; syncSheet(); }
+    if (ev.target.id === "adminDate") { S.admin.date = ev.target.value; S.admin.dirty = false; renderAdmin(true); }
+  });
+  document.addEventListener("change", async function (ev) {
+    var el = ev.target;
+    if (el.id === "importFile") { importBackup(el.files && el.files[0]); el.value = ""; return; }
+    if (el.dataset && el.dataset.rename) {
+      var name = el.value.trim().slice(0, 20);
+      var m = S.members.filter(function (x) { return x.id === el.dataset.rename; })[0];
+      if (!m) return;
+      if (!name || name === m.name) { el.value = m.name; return; }
+      try { await S.db.doc("members/" + m.id).update({ name: name }); } catch (e) { fail(e); el.value = m.name; }
+    } else if (el.id === "setName") {
+      var v = el.value.trim().slice(0, 30) || DEFAULT_RULES.name;
+      if (v !== S.rules.name) saveRule("name", v);
+    }
+  });
+  document.addEventListener("focusout", function () {
+    setTimeout(function () { if (S.pendingMembers) renderMembers(); }, 0);
+  });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { if (!$("#loginOv").hidden) closeLogin(); else if (S.sheet) closeSheet(); } });
+  $("#loginForm").addEventListener("submit", doLogin);
+  window.addEventListener("hashchange", function () { setTab(location.hash.slice(1), true); });
+
+  /* ---------- start ---------- */
+  async function init() {
+    S.admin.date = todayStr();
+    setTab(location.hash.slice(1), true);
+    render();
+    var db = null;
+    try {
+      if (typeof firebase === "undefined") throw new Error("no sdk");
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      db = createFirestoreDb(firebase.firestore());
+      S.auth = firebase.auth();
+      S.auth.onAuthStateChanged(function (u) {
+        S.readOnly = !u;
+        render();
+      });
+    } catch (e) { db = null; }
+    if (!db) { S.noDb = true; render(); return; }
+    S.db = db;
+    var onErr = function () { S.loaded = { m: true, x: true, r: true }; S.loadErr = true; render(); };
+    db.collection("members").onSnapshot(function (snap) {
+      S.members = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).filter(function (x) { return x.name; });
+      S.loaded.m = true; render();
+    }, onErr);
+    db.collection("matches").onSnapshot(function (snap) {
+      S.matches = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      S.loaded.x = true; render();
+    }, onErr);
+    db.doc("settings/rules").onSnapshot(function (snap) {
+      S.rules = Object.assign({}, DEFAULT_RULES, snap.exists ? snap.data() : {});
+      S.loaded.r = true; render();
+    }, onErr);
+  }
+  init();
+  if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>
