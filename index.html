@@ -982,8 +982,11 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
     var c = compute(), last = c.ms[c.ms.length - 1];
     if (!last) return "";
     var sm = matchSummary(last), medals = ["🥇", "🥈", "🥉"];
-    var top = c.rows.slice(0, 7).map(function (r, i) {
-      return (r.rank <= 3 ? medals[r.rank - 1] : String(r.rank)) + " " + r.name + " " + fmtN(r.pts) + "점";
+    var lv = 0, prevPts = null;
+    var top = c.rows.slice(0, 7).map(function (r) {
+      if (prevPts === null || r.pts !== prevPts) lv++;
+      prevPts = r.pts;
+      return (lv <= 3 ? medals[lv - 1] : String(lv)) + " " + r.name + " " + fmtN(r.pts) + "점";
     });
     return "⚽ " + (S.rules.name || DEFAULT_RULES.name) + " " + fmtDate(last.date) + " 결과\n" +
       sm.line + " · " + sm.att + "명 참석\n\n" +
