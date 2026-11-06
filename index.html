@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#14532F">
-<title>FC 평풋 승점판</title>
+<title>FC 평풋 스코어보드</title>
 <meta name="description" content="FC 평풋 승점 · 출석 · 기록을 한눈에">
 <meta property="og:type" content="website">
-<meta property="og:title" content="FC 평풋 승점판">
+<meta property="og:title" content="FC 평풋 스코어보드">
 <meta property="og:description" content="승점 · 출석 · 기록을 한눈에">
 <meta property="og:url" content="https://minkun-admin.github.io/fcpp/">
 <meta property="og:image" content="https://minkun-admin.github.io/fcpp/og.png">
@@ -252,7 +252,8 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .att .dh .A { color: var(--teamA-ink); }
 .att .dh .B { color: var(--teamB-ink); }
 .att .dh .D { color: var(--draw); }
-.att .rate { color: var(--muted); font-variant-numeric: tabular-nums; }
+.att .rate { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.att thead th:nth-child(2) { color: var(--ink); font-weight: 700; }
 .ch { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ch.A { background: var(--teamA); color: var(--on-teamA); }
 .ch.B { background: var(--teamB); color: var(--on-teamB); }
@@ -440,16 +441,16 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     <div class="top-row">
       <div>
         <p class="eyebrow" id="clubName">FC 평풋</p>
-        <h1>승점판</h1>
+        <h1>스코어보드</h1>
       </div>    </div>  </div>
 </header>
 
 <nav class="tabs" aria-label="화면 선택">
   <div class="wrap tabs-in" role="tablist">
-    <button class="tab" role="tab" id="tab-rank" data-act="tab" data-tab="rank" aria-selected="true" type="button">순위</button>
-    <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="false" type="button">경기</button>
-    <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석부</button>
+    <button class="tab" role="tab" id="tab-matches" data-act="tab" data-tab="matches" aria-selected="true" type="button">경기</button>
+    <button class="tab" role="tab" id="tab-rank" data-act="tab" data-tab="rank" aria-selected="false" type="button">승점</button>
     <button class="tab" role="tab" id="tab-records" data-act="tab" data-tab="records" aria-selected="false" type="button">개인기록</button>
+    <button class="tab" role="tab" id="tab-attendance" data-act="tab" data-tab="attendance" aria-selected="false" type="button">출석부</button>
     <button class="tab" role="tab" id="tab-vote" data-act="tab" data-tab="vote" aria-selected="false" type="button">MOM투표</button>
     <button class="tab" role="tab" id="tab-members" data-act="tab" data-tab="members" aria-selected="false" type="button">멤버</button>
     <button class="tab" role="tab" id="tab-admin" data-act="tab" data-tab="admin" aria-selected="false" type="button" hidden>관리자</button>
@@ -457,9 +458,9 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 </nav>
 
 <main class="wrap">
-  <section id="panel-rank" role="tabpanel" aria-labelledby="tab-rank"><div id="rankBody"></div></section>
+  <section id="panel-rank" role="tabpanel" aria-labelledby="tab-rank" hidden><div id="rankBody"></div></section>
 
-  <section id="panel-matches" role="tabpanel" aria-labelledby="tab-matches" hidden>
+  <section id="panel-matches" role="tabpanel" aria-labelledby="tab-matches">
     <div class="sect-head"><h2>경기 기록</h2><p id="matchesHint">최근 경기부터 보여줘요. 수정하면 순위와 출석에 바로 반영돼요.</p></div>
     <div id="matchBody"></div>
   </section>
@@ -582,7 +583,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     });
   };
   var DOW = ["일", "월", "화", "수", "목", "금", "토"];
-  var TABS = ["rank", "matches", "attendance", "records", "vote", "members", "admin"];
+  var TABS = ["matches", "rank", "records", "attendance", "vote", "members", "admin"];
   var DEFAULT_RULES = { name: "FC 평풋", win: 3, draw: 1, loss: 0 };
   var TEAM = { A: "노랑팀", B: "주황팀" };
 
@@ -590,7 +591,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     db: null, auth: null, noDb: false, readOnly: true, canKnown: true,
     members: [], matches: [], rules: Object.assign({}, DEFAULT_RULES),
     loaded: { m: false, x: false, r: false },
-    tab: "rank", sheet: null, pendingMembers: false, attScrolled: false,
+    tab: "matches", sheet: null, pendingMembers: false, attScrolled: false,
     admin: { date: "", outcomes: {}, teams: {}, existing: null, dirty: false }
   };
 
@@ -706,7 +707,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
     html += '<div class="sect-head"><h2>누적 승점</h2><p>이번 시즌 승점 레이스!! 동점이면 출석이 많은 순서입니다.</p></div>';
     if (!c.ms.length) {
-      html += emptyBlock("아직 경기 기록이 없어요", "첫 경기를 기록하면 순위가 만들어져요.");
+      html += emptyBlock("아직 경기 기록이 없어요", "첫 경기를 기록하면 승점 순위가 만들어져요.");
     }
     html += '<ol class="board">' + c.rows.map(function (r) {
       var lead = c.ms.length && r.rank === 1 && r.pts > 0;
@@ -759,7 +760,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }).join("") + "</tr>";
     var body = rows.map(function (r) {
       var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
-      return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + r.att + "/" + ms.length + " · " + pct + "%</td>" + ms.map(function (m) {
+      return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + pct + "% · " + r.att + "/" + ms.length + "</td>" + ms.map(function (m) {
         var o = outcome(m, r.id);
         if (!o) return '<td><span class="ch x" aria-label="결석">–</span></td>';
         var p = o === "W" ? num(S.rules.win) : o === "D" ? num(S.rules.draw) : num(S.rules.loss);
@@ -770,8 +771,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         return '<td><span class="ch ' + cls + '" aria-label="' + who + " " + fmtN(p) + '점">' + fmtN(p) + "</span></td>";
       }).join("") + "</tr>";
     }).join("");
-    box.innerHTML = '<div class="scroll" id="attScroll"><table class="att"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>" +
-      '<p class="legend"><span><span class="ch A">3</span> 노랑팀</span><span><span class="ch B">3</span> 주황팀</span><span><span class="ch W">3</span> 승(직접 입력)</span><span><span class="ch L">0</span> 패(직접 입력)</span><span><span class="ch x">–</span> 결석</span></p>';
+    box.innerHTML = '<div class="scroll" id="attScroll"><table class="att"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>";
     if (S.tab === "attendance" && !S.attScrolled) { var sc = $("#attScroll"); sc.scrollLeft = sc.scrollWidth; S.attScrolled = true; }
   }
 
@@ -897,14 +897,14 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function render() {
     document.documentElement.classList.toggle("ro", S.readOnly);
     $("#tab-admin").hidden = S.readOnly;
-    if (S.readOnly && S.tab === "admin") setTab("rank");
+    if (S.readOnly && S.tab === "admin") setTab("matches");
     renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); renderVote();
   }
 
   /* ---------- tabs ---------- */
   function setTab(t, fromHash) {
-    if (TABS.indexOf(t) < 0) t = "rank";
-    if (t === "admin" && S.readOnly) t = "rank";
+    if (TABS.indexOf(t) < 0) t = "matches";
+    if (t === "admin" && S.readOnly) t = "matches";
     S.tab = t;
     TABS.forEach(function (k) {
       $("#panel-" + k).hidden = k !== t;
