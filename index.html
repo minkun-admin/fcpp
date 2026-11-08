@@ -1691,7 +1691,11 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var btn = t.closest("[data-act]") || (t.closest("header.top") ? { dataset: { act: "home" } } : null); if (!btn) return;
     var act = btn.dataset.act;
     if (act === "tab") setTab(btn.dataset.tab);
-    else if (act === "home") { if (S.tab !== "matches") setTab("matches"); else window.scrollTo({ top: 0, behavior: "smooth" }); }
+    else if (act === "home") {
+      var now = Date.now(); S.homeTaps = (S.homeTaps || []).filter(function (x) { return now - x < 4000; }); S.homeTaps.push(now);
+      if (S.homeTaps.length >= 5 && S.readOnly && typeof openLogin === "function") { S.homeTaps = []; try { localStorage.setItem("fcpp-admin", "1"); } catch (e) {} openLogin(); return; }
+      if (S.tab !== "matches") setTab("matches"); else window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     else if (act === "new") openSheet(null);
     else if (act === "edit") editMatch(btn.dataset.id);
     else if (act === "admin-save") adminSave();
