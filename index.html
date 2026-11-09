@@ -1565,7 +1565,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   }
   function repText(rep) {
     var club = S.rules.name || DEFAULT_RULES.name, medals = ["🥇", "🥈", "🥉"];
-    var out = ["📅 " + club + " " + rep.label + " 결산", rep.games + "경기 · " + rep.people + "명 참석", "", "🏆 월간 승점 TOP 7"];
+    var out = ["📅 " + club + " " + rep.label + " 결산", "", "🏆 월간 승점 TOP 7"];
     rep.top.forEach(function (r) { out.push((r.lv <= 3 ? medals[r.lv - 1] : String(r.lv)) + " " + r.name + " " + fmtN(r.pts) + "점"); });
     if (rep.moms.length) {
       out.push("", "👑 이달의 MOM");
@@ -1602,16 +1602,15 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       var y = 0;
       if (draw) {
         c.fillStyle = BG; c.fillRect(0, 0, W, 4000);
-        c.fillStyle = GREEN; c.fillRect(0, 0, W, 330);
+        c.fillStyle = GREEN; c.fillRect(0, 0, W, 280);
         c.strokeStyle = "rgba(255,255,255,0.12)"; c.lineWidth = 8;
-        c.beginPath(); c.arc(W - 150, 165, 120, 0, Math.PI * 2); c.stroke();
-        c.beginPath(); c.moveTo(W - 150, 0); c.lineTo(W - 150, 330); c.stroke();
+        c.beginPath(); c.arc(W - 150, 140, 110, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.moveTo(W - 150, 0); c.lineTo(W - 150, 280); c.stroke();
         c.textBaseline = "alphabetic"; c.textAlign = "left";
         c.fillStyle = "rgba(255,255,255,0.85)"; c.font = "700 36px " + BODY; c.fillText(club, P, 96);
-        c.fillStyle = "#fff"; c.font = "400 104px " + DISP; c.fillText(rep.label + " 결산", P, 210);
-        c.fillStyle = "rgba(255,255,255,0.85)"; c.font = "400 36px " + BODY; c.fillText(rep.games + "경기 · " + rep.people + "명 참석", P, 280);
+        c.fillStyle = "#fff"; c.font = "400 104px " + DISP; c.fillText(rep.label + " 결산", P, 208);
       }
-      y = 330 + 36;
+      y = 280 + 36;
       function card(h, title, iconD, iconColor) {
         if (draw) {
           c.save(); c.shadowColor = "rgba(20,60,40,0.10)"; c.shadowBlur = 18; c.shadowOffsetY = 4;
