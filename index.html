@@ -409,6 +409,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .form { align-items: center; }
 .fl { align-self: center; margin-right: 0.3rem; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 .streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
+.streak.lose { background: #E3EDF7; color: #2B5A8C; }
 .reportcv { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
 .panel-box .hint { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
 .panel-box .hint:empty { display: none; }
@@ -1497,17 +1498,21 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 
   /* ---------- streak & monthly report ---------- */
   function streakOf(id) {
-    var ms = sortedMatches(), n = 0;
+    var ms = sortedMatches(), n = 0, kind = "";
     for (var i = ms.length - 1; i >= 0; i--) {
       var o = outcome(ms[i], id);
       if (!o) continue;
-      if (o === "W") n++; else break;
+      if (o === "D") break;
+      if (!kind) kind = o;
+      if (o === kind) n++; else break;
     }
-    return n;
+    return { n: n, kind: kind };
   }
   function streakHtml(id) {
-    var n = streakOf(id);
-    return n >= 2 ? ' <span class="streak" title="' + n + '연승 중">🔥 ' + n + "연승 중</span>" : "";
+    var s = streakOf(id);
+    if (s.n < 2) return "";
+    if (s.kind === "W") return ' <span class="streak" title="' + s.n + '연승 중">🔥 ' + s.n + "연승 중</span>";
+    return ' <span class="streak lose" title="' + s.n + '연패 중">💧 ' + s.n + "연패 중</span>";
   }
 
   var REP = { key: "", sig: "", seq: 0, rep: null };
