@@ -781,7 +781,13 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       box.innerHTML = emptyBlock("보여줄 출석 기록이 없어요", "경기를 기록하면 멤버별 출석표가 만들어져요.");
       return;
     }
-    var rows = c.rows.slice().sort(function (a, b) { return (b.att - a.att) || byName(a, b); });
+    var wr = {};
+    c.rows.forEach(function (r) {
+      var w = 0;
+      ms.forEach(function (m) { if (outcome(m, r.id) === "W") w++; });
+      wr[r.id] = r.att ? w / r.att : 0;
+    });
+    var rows = c.rows.slice().sort(function (a, b) { return (b.att - a.att) || (wr[b.id] - wr[a.id]) || byName(a, b); });
     var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + ms.map(function (m) {
       return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
         (m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
