@@ -408,6 +408,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .fm.tB { background: var(--teamB); color: var(--on-teamB); }
 .form { align-items: center; }
 .fl { align-self: center; margin-right: 0.3rem; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
+.reportcv { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.panel-box .hint { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+.panel-box .hint:empty { display: none; }
 .vsub .thumb { font-size: 1em; margin-left: 0; }
 .vopt .ti { vertical-align: -0.15em; }
 .tabs-in { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -550,6 +554,15 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     <div class="panel-box">
       <pre class="sharebox" id="sharePreview"></pre>
       <div class="btnrow"><button class="btn primary" type="button" data-act="share-copy">카톡 공유 글 복사</button></div>
+    </div>
+
+    <div class="sect-head" id="reportHead"><h2>월간 결산</h2><p>한 달 경기가 끝나면 카톡에 올릴 결산 이미지와 글을 만들어요. 월이 바뀌면 지난달이 자동으로 골라져요.</p></div>
+    <div class="panel-box">
+      <div><label class="fl" for="reportMonth">결산할 달</label><select id="reportMonth" class="vsel"></select></div>
+      <p class="hint" id="reportNote"></p>
+      <canvas id="reportCanvas" class="reportcv" hidden></canvas>
+      <pre class="sharebox" id="reportText"></pre>
+      <div class="btnrow"><button class="btn primary" type="button" data-act="report-img">이미지 공유·저장</button><button class="btn" type="button" data-act="report-copy">결산 글 복사</button></div>
     </div>
   </section>
   <footer class="foot" id="foot">
@@ -875,7 +888,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           '<div><h3>함께 뛰면 (최대 5명)</h3><div class="mcols">' + mateCol("잘 이기는 팀원", "승률순", top, "W") + mateCol("잘 지는 팀원", "패율순", bot, "L") + "</div></div>";
       }
       return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
-        '</span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="sub">' + sub + thumbTotalHtml(r.id) + '</span></span><span class="minis">' + minis +
+        '</span><span class="who"><span class="nm">' + esc(r.name) + streakHtml(r.id) + '</span><span class="sub">' + sub + thumbTotalHtml(r.id) + '</span></span><span class="minis">' + minis +
         '</span></summary><div class="rec-body">' + body + "</div></details>";
     }).join("") + "</div>";
   }
@@ -912,7 +925,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     document.documentElement.classList.toggle("ro", S.readOnly);
     $("#tab-admin").hidden = S.readOnly;
     if (S.readOnly && S.tab === "admin") setTab("matches");
-    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); renderVote();
+    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); syncReport(); renderVote();
   }
 
   /* ---------- tabs ---------- */
@@ -1191,7 +1204,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       st.res[p.id] = res; delete st.resErr[p.id];
       var c2 = readCache(); c2[resKey(p)] = res; writeCache(c2);
     } catch (e) { st.resErr[p.id] = (e && e.code) || "net"; }
-    st.resBusy = false; renderRank(); renderMatches(); renderRecords(); renderVote();
+    st.resBusy = false; renderRank(); renderMatches(); renderRecords(); renderVote(); if (typeof syncReport === 'function') syncReport();
   }
   function syncResults() {
     var st = S.vote; if (!st.pollsLoaded || S.noDb || st.resBusy) return;
@@ -1482,6 +1495,276 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (S.tab === "vote") renderVote(); else { tabBadge(); if (S.tab === "rank") renderRank(); }
   }, 30000);
 
+  /* ---------- streak & monthly report ---------- */
+  function streakOf(id) {
+    var ms = sortedMatches(), n = 0;
+    for (var i = ms.length - 1; i >= 0; i--) {
+      var o = outcome(ms[i], id);
+      if (!o) continue;
+      if (o === "W") n++; else break;
+    }
+    return n;
+  }
+  function streakHtml(id) {
+    var n = streakOf(id);
+    return n >= 2 ? ' <span class="streak" title="' + n + '연승 중">🔥 ' + n + "연승 중</span>" : "";
+  }
+
+  var REP = { key: "", sig: "", seq: 0, rep: null };
+  function monthKey(s) { return String(s).slice(0, 7); }
+  function monthLabel(k, withYear) { var p = k.split("-"); return (withYear ? p[0] + "년 " : "") + Number(p[1]) + "월"; }
+  function reportMonths() {
+    var set = {};
+    sortedMatches().forEach(function (m) { set[monthKey(m.date)] = 1; });
+    return Object.keys(set).sort().reverse();
+  }
+  function defaultReportMonth(list) {
+    var cur = todayStr().slice(0, 7), y = Number(cur.slice(0, 4)), mo = Number(cur.slice(5, 7));
+    var prev = mo === 1 ? (y - 1) + "-12" : y + "-" + String(mo - 1).padStart(2, "0");
+    return list.indexOf(prev) >= 0 ? prev : list.indexOf(cur) >= 0 ? cur : list[0];
+  }
+  function nameList(a, max) {
+    max = max || 4;
+    return a.length <= max ? a.join(", ") : a.slice(0, max).join(", ") + " 외 " + (a.length - max) + "명";
+  }
+  function buildReport(key) {
+    var R = S.rules, ms = sortedMatches().filter(function (m) { return monthKey(m.date) === key; });
+    if (!ms.length) return null;
+    var rows = S.members.map(function (mb) {
+      var w = 0, d = 0, l = 0, pts = 0;
+      ms.forEach(function (m) {
+        var o = outcome(m, mb.id);
+        if (o === "W") { w++; pts += num(R.win); } else if (o === "D") { d++; pts += num(R.draw); } else if (o === "L") { l++; pts += num(R.loss); }
+      });
+      return { id: mb.id, name: mb.name || "", w: w, d: d, l: l, pts: pts, att: w + d + l, praise: 0 };
+    }).filter(function (r) { return r.att > 0; });
+    var moms = [], pending = 0;
+    ms.forEach(function (m) {
+      var p = S.polls.filter(function (x) { return x.id === m.date; })[0];
+      if (!p) return;
+      var res = pollOpen(p) ? null : resOf(p.id);
+      if (!res) { pending++; return; }
+      var rr = resultRows(p, res), max = rr.length ? rr[0].n : 0;
+      if (max > 0) moms.push({ date: m.date, names: rr.filter(function (x) { return x.n === max; }).map(function (x) { return x.name; }) });
+      rows.forEach(function (r) { r.praise += (res.praise && res.praise[r.id]) || 0; });
+    });
+    var sorted = rows.slice().sort(function (a, b) { return b.pts - a.pts || b.att - a.att || b.w - a.w || byName(a, b); });
+    var lv = 0, prev = null;
+    var top = sorted.slice(0, 7).map(function (r) {
+      if (prev === null || r.pts !== prev) lv++;
+      prev = r.pts;
+      return { name: r.name, pts: r.pts, w: r.w, d: r.d, l: r.l, lv: lv };
+    });
+    var maxP = rows.reduce(function (x, r) { return Math.max(x, r.praise); }, 0);
+    var perfect = ms.length >= 2 ? rows.filter(function (r) { return r.att === ms.length; }).map(function (r) { return r.name; }).sort(function (a, b) { return a.localeCompare(b, "ko"); }) : [];
+    return {
+      key: key, label: monthLabel(key), games: ms.length, people: rows.length, top: top, moms: moms, pending: pending,
+      praise: { n: maxP, names: maxP > 0 ? rows.filter(function (r) { return r.praise === maxP; }).map(function (r) { return r.name; }) : [] },
+      perfect: perfect
+    };
+  }
+  function repText(rep) {
+    var club = S.rules.name || DEFAULT_RULES.name, medals = ["🥇", "🥈", "🥉"];
+    var out = ["📅 " + club + " " + rep.label + " 결산", rep.games + "경기 · " + rep.people + "명 참석", "", "🏆 월간 승점 TOP 7"];
+    rep.top.forEach(function (r) { out.push((r.lv <= 3 ? medals[r.lv - 1] : String(r.lv)) + " " + r.name + " " + fmtN(r.pts) + "점"); });
+    if (rep.moms.length) {
+      out.push("", "👑 이달의 MOM");
+      rep.moms.forEach(function (m) { out.push(fmtDate(m.date) + " " + m.names.join(", ")); });
+    }
+    if (rep.praise.n) out.push("", "👍 칭찬왕 " + nameList(rep.praise.names) + " (" + rep.praise.n + "개)");
+    if (rep.perfect.length) out.push("", "🎖️ 개근 " + nameList(rep.perfect, 8));
+    out.push("", "📱 전체 기록 보기", siteUrl());
+    return out.join("\n");
+  }
+
+  var CROWN_D = "M2.5 7.5l4.6 4.2L12 4l4.9 7.7 4.6-4.2-1.9 11H4.4l-1.9-11zM4.8 20.5h14.4V22H4.8z";
+  var THUMB_D = "M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z";
+  function reportFontText(rep) { return repText(rep) + " 월간 승점 이달의 칭찬왕 개근 스코어보드 결산 승 무 패 점 경기 명 참석 " + location.host + location.pathname; }
+  function drawReport(cv, rep) {
+    var W = 1080, P = 56;
+    var DISP = '"Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    var BODY = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    var GREEN = "#14532F", INK = "#1B2A20", MUTED = "#6B7A70", GOLD = "#E8A800", BG = "#EEF2EB";
+    var club = S.rules.name || DEFAULT_RULES.name;
+    function rr(c, x, y, w, h, r) {
+      c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+    }
+    function fit(c, t, maxW) {
+      if (c.measureText(t).width <= maxW) return t;
+      while (t.length > 1 && c.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+      return t + "…";
+    }
+    function icon(c, d, x, y, size, color) {
+      c.save(); c.translate(x, y); c.scale(size / 24, size / 24); c.fillStyle = color; c.fill(new Path2D(d)); c.restore();
+    }
+    function layout(c, draw) {
+      var y = 0;
+      if (draw) {
+        c.fillStyle = BG; c.fillRect(0, 0, W, 4000);
+        c.fillStyle = GREEN; c.fillRect(0, 0, W, 330);
+        c.strokeStyle = "rgba(255,255,255,0.12)"; c.lineWidth = 8;
+        c.beginPath(); c.arc(W - 150, 165, 120, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.moveTo(W - 150, 0); c.lineTo(W - 150, 330); c.stroke();
+        c.textBaseline = "alphabetic"; c.textAlign = "left";
+        c.fillStyle = "rgba(255,255,255,0.85)"; c.font = "700 36px " + BODY; c.fillText(club, P, 96);
+        c.fillStyle = "#fff"; c.font = "400 104px " + DISP; c.fillText(rep.label + " 결산", P, 210);
+        c.fillStyle = "rgba(255,255,255,0.85)"; c.font = "400 36px " + BODY; c.fillText(rep.games + "경기 · " + rep.people + "명 참석", P, 280);
+      }
+      y = 330 + 36;
+      function card(h, title, iconD, iconColor) {
+        if (draw) {
+          c.save(); c.shadowColor = "rgba(20,60,40,0.10)"; c.shadowBlur = 18; c.shadowOffsetY = 4;
+          c.fillStyle = "#fff"; rr(c, P - 20, y, W - (P - 20) * 2, h, 32); c.fill(); c.restore();
+          var tx = P + 20;
+          if (iconD) { icon(c, iconD, tx, y + 34, 44, iconColor); tx += 58; }
+          c.fillStyle = INK; c.font = "700 40px " + BODY; c.textAlign = "left"; c.fillText(title, tx, y + 70);
+        }
+      }
+      var L = P + 20, R = W - P - 20;
+      // TOP 7
+      var rowH = 78, h1 = 110 + rep.top.length * rowH + 24;
+      card(h1, "월간 승점 TOP 7");
+      if (draw) {
+        var ring = ["#F2B600", "#9AA3AD", "#C77D3A"];
+        rep.top.forEach(function (r, i) {
+          var cy = y + 110 + i * rowH + rowH / 2;
+          c.beginPath(); c.arc(L + 30, cy, 27, 0, Math.PI * 2);
+          c.fillStyle = r.lv <= 3 ? ring[r.lv - 1] : "#E6ECE4"; c.fill();
+          c.fillStyle = r.lv <= 3 ? "#fff" : MUTED; c.font = "700 32px " + BODY; c.textAlign = "center"; c.fillText(String(r.lv), L + 30, cy + 11);
+          c.textAlign = "left"; c.fillStyle = INK; c.font = "700 42px " + BODY; c.fillText(fit(c, r.name, 300), L + 84, cy + 15);
+          c.fillStyle = MUTED; c.font = "400 28px " + BODY; c.fillText(r.w + "승 " + r.d + "무 " + r.l + "패", L + 410, cy + 11);
+          c.textAlign = "right"; c.fillStyle = GREEN; c.font = "700 46px " + BODY; c.fillText(fmtN(r.pts) + "점", R, cy + 16);
+        });
+      }
+      y += h1 + 28;
+      // MOM
+      if (rep.moms.length) {
+        var h2 = 110 + rep.moms.length * 64 + 20;
+        card(h2, "이달의 MOM", CROWN_D, "#E8A800");
+        if (draw) {
+          rep.moms.forEach(function (m, i) {
+            var cy = y + 110 + i * 64 + 32;
+            c.textAlign = "left"; c.fillStyle = MUTED; c.font = "400 32px " + BODY; c.fillText(fmtDate(m.date), L, cy + 11);
+            c.fillStyle = INK; c.font = "700 42px " + BODY; c.fillText(fit(c, m.names.join(" · "), R - (L + 230)), L + 230, cy + 15);
+          });
+        }
+        y += h2 + 28;
+      }
+      // 칭찬왕 / 개근
+      function wrapNames(names, maxW, maxLines) {
+        c.font = "700 40px " + BODY;
+        var lines = [], cur = "", used = 0;
+        for (var i = 0; i < names.length; i++) {
+          var tryT = cur ? cur + ", " + names[i] : names[i];
+          if (c.measureText(tryT).width <= maxW) { cur = tryT; used = i + 1; continue; }
+          if (lines.length >= maxLines - 1) break;
+          lines.push(cur + ","); cur = names[i]; used = i + 1;
+        }
+        if (cur) lines.push(cur);
+        if (used < names.length) {
+          var rest = " 외 " + (names.length - used) + "명";
+          var last = lines.pop().replace(/,$/, "");
+          while (last.indexOf(",") > 0 && c.measureText(last + rest).width > maxW) { last = last.slice(0, last.lastIndexOf(",")); used--; rest = " 외 " + (names.length - used) + "명"; }
+          lines.push(last + rest);
+        }
+        return lines;
+      }
+      var extra = [], tx0 = L + 230;
+      if (rep.praise.n) extra.push({ k: "칭찬왕", d: THUMB_D, col: "#C2410C", lines: wrapNames(rep.praise.names, R - tx0 - 100, 2), s: rep.praise.n + "개" });
+      if (rep.perfect.length) extra.push({ k: "개근", d: null, col: GREEN, lines: wrapNames(rep.perfect, R - tx0 - 28, 3), s: "" });
+      if (extra.length) {
+        extra.forEach(function (e) { e.h = Math.max(86, e.lines.length * 54 + 32); });
+        var h3 = 24 + extra.reduce(function (t, e) { return t + e.h; }, 0) + 12;
+        if (draw) {
+          c.save(); c.shadowColor = "rgba(20,60,40,0.10)"; c.shadowBlur = 18; c.shadowOffsetY = 4;
+          c.fillStyle = "#fff"; rr(c, P - 20, y, W - (P - 20) * 2, h3, 32); c.fill(); c.restore();
+          var ey = y + 24;
+          extra.forEach(function (e) {
+            c.textAlign = "left";
+            var first = ey + 54;
+            if (e.d) icon(c, e.d, L, first - 38, 44, e.col);
+            c.fillStyle = e.col; c.font = "700 36px " + BODY; c.fillText(e.k, L + (e.d ? 58 : 0), first - 2);
+            c.fillStyle = INK; c.font = "700 40px " + BODY;
+            e.lines.forEach(function (ln, i) { c.fillText(ln, tx0, first + i * 54); });
+            if (e.s) { c.textAlign = "right"; c.fillStyle = MUTED; c.font = "700 34px " + BODY; c.fillText(e.s, R, first - 2); }
+            ey += e.h;
+          });
+        }
+        y += h3 + 28;
+      }
+      if (draw) {
+        c.textAlign = "center"; c.fillStyle = MUTED; c.font = "400 28px " + BODY;
+        c.fillText(location.host + location.pathname.replace(/index\.html$/, "").replace(/\/$/, ""), W / 2, y + 40);
+      }
+      return y + 90;
+    }
+    var m = document.createElement("canvas").getContext("2d");
+    var H = layout(m, false);
+    cv.width = W; cv.height = H;
+    layout(cv.getContext("2d"), true);
+  }
+  async function syncReport() {
+    var sel = $("#reportMonth"); if (!sel) return;
+    var cv = $("#reportCanvas"), note = $("#reportNote"), txt = $("#reportText");
+    if (!ready()) return;
+    var list = reportMonths();
+    if (!list.length) {
+      sel.innerHTML = ""; REP.sig = ""; REP.rep = null; cv.hidden = true; txt.textContent = "";
+      note.textContent = "경기 기록이 생기면 결산을 만들 수 있어요.";
+      return;
+    }
+    cv.hidden = false;
+    var multi = list.some(function (k) { return k.slice(0, 4) !== list[0].slice(0, 4); });
+    var sig = list.join();
+    if (REP.sig !== sig) {
+      sel.innerHTML = list.map(function (k) { return '<option value="' + k + '">' + monthLabel(k, multi) + "</option>"; }).join("");
+      REP.sig = sig;
+    }
+    var key = REP.key && list.indexOf(REP.key) >= 0 ? REP.key : defaultReportMonth(list);
+    REP.key = key; sel.value = key;
+    var rep = buildReport(key), seq = ++REP.seq;
+    if (!rep) return;
+    REP.rep = rep;
+    txt.textContent = repText(rep);
+    var msg = [];
+    if (key === todayStr().slice(0, 7)) msg.push("이번 달은 아직 진행 중이에요. 마지막 경기까지 끝난 뒤에 보내는 걸 추천해요.");
+    if (rep.pending) msg.push("아직 마감되지 않았거나 결과를 불러오지 못한 투표가 " + rep.pending + "개 있어요. 그 경기의 MOM·칭찬은 빠져 있어요.");
+    note.textContent = msg.join(" ");
+    try {
+      if (document.fonts && document.fonts.load) {
+        var t = reportFontText(rep);
+        await Promise.all([document.fonts.load('400 40px "Black Han Sans"', t), document.fonts.load('700 40px "Noto Sans KR"', t), document.fonts.load('400 40px "Noto Sans KR"', t)]);
+      }
+    } catch (e) {}
+    if (seq !== REP.seq) return;
+    drawReport(cv, rep);
+  }
+  function reportFileName() { return "fcpp-" + REP.key + "-report.png"; }
+  async function shareReportImage() {
+    var rep = REP.rep, cv = $("#reportCanvas");
+    if (!rep) { toast("먼저 결산할 달을 골라 주세요"); return; }
+    var blob = await new Promise(function (res) { cv.toBlob(res, "image/png"); });
+    if (!blob) { toast("이미지를 만들지 못했어요"); return; }
+    var file = null;
+    try { file = new File([blob], reportFileName(), { type: "image/png" }); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: (S.rules.name || DEFAULT_RULES.name) + " " + rep.label + " 결산" }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = reportFileName();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    toast("이미지를 저장했어요. 카톡에서 사진으로 보내세요");
+  }
+  async function copyReportText() {
+    if (!REP.rep) { toast("먼저 결산할 달을 골라 주세요"); return; }
+    toast((await copyText(repText(REP.rep))) ? "결산 글을 복사했어요. 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
+  }
+  document.addEventListener("change", function (ev) {
+    if (ev.target && ev.target.id === "reportMonth") { REP.key = ev.target.value; syncReport(); }
+  });
+
   /* ---------- toast & errors ---------- */
   var toastTimer;
   function toast(msg) {
@@ -1737,6 +2020,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     else if (act === "export") exportBackup();
     else if (act === "import-pick") $("#importFile").click();
     else if (act === "share-copy") copyShare();
+    else if (act === "report-img") shareReportImage();
+    else if (act === "report-copy") copyReportText();
     else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.praise = S.vote.praise.filter(function (x) { return x !== S.vote.pick; }); S.vote.armed = false; renderVote(); }
     else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= 3) toast("칭찬은 최대 3명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
     else if (act === "vote-submit") submitVote();
