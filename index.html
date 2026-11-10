@@ -1270,12 +1270,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           var top = c.rows.slice(0, 7).map(function (r) {
             if (prevPts === null || r.pts !== prevPts) lv++;
             prevPts = r.pts;
-            return (lv <= 3 ? medals[lv - 1] : String(lv)) + " " + r.name + " " + fmtN(r.pts) + "점";
+            return (lv <= 3 ? medals[lv - 1] : lv + "위") + " " + r.name + " " + fmtN(r.pts) + "점";
           });
           if (top.length && c.ms.length) {
             head = "⚽ " + club + " " + fmtDate(p.date) + " 결과가 업데이트됐어요!";
             var sm = m ? matchSummary(m) : null;
-            rankPart = (sm ? sm.line + " · " + sm.att + "명 참석\n" : "") + "\n🏆 승점 순위 TOP 7\n" + top.join("\n") + "\n\n";
+            rankPart = (sm ? sm.line + " · " + sm.att + "명 참석\n" : "") + "\n[승점 순위 TOP 7]\n" + top.join("\n") + "\n\n";
           }
         }
       } catch (e) { rankPart = ""; head = "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표"; }
