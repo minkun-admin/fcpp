@@ -1124,7 +1124,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   /* ---------- MOM 투표 (익명, 기기당 1표, 마감 후 결과 공개) ---------- */
   var VOTE_HOURS = 48;
   S.polls = [];
-  S.vote = { me: "", voted: {}, votedLast: {}, votedErr: {}, pick: "", praise: [], armed: false, busy: false, pollsLoaded: false, adminDate: "",
+  S.vote = { pick: "", praise: [], armed: false, busy: false, pollsLoaded: false, adminDate: "",
     mine: {}, mineLast: {}, mineErr: {}, res: {}, resLast: {}, resErr: {} };
 
   function tms(v) { return v && typeof v.toMillis === "function" ? v.toMillis() : Number(v) || 0; }
@@ -1320,7 +1320,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var cuid = cu ? cu.uid : "";
     if (st.seenUid !== undefined && st.seenUid !== cuid) {
       st.mine = {}; st.mineLast = {}; st.mineErr = {};
-      if (!st.busy) { st.pick = ""; st.praise = []; st.armed = false; st.me = ""; }
+      if (!st.busy) { st.pick = ""; st.praise = []; st.armed = false; }
     }
     st.seenUid = cuid;
     renderVoteAdmin();
@@ -1353,9 +1353,6 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         return;
       }
       var pickName = st.pick ? candName(p, st.pick) : "";
-      var meGrid = p.candidates.map(function (id) {
-        return '<button class="vopt" type="button" data-act="vote-me" data-id="' + esc(id) + '" aria-pressed="' + (st.me === id) + '">' + esc(candName(p, id)) + "</button>";
-      }).join("");
       var pr = st.praise.filter(function (id) { return id !== st.pick; });
       var momGrid = p.candidates.map(function (id) {
         return '<button class="vopt" type="button" data-act="vote-pick" data-id="' + esc(id) + '" aria-pressed="' + (st.pick === id) + '">' + esc(candName(p, id)) + "</button>";
@@ -1369,10 +1366,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           }).join("") + "</div>";
       }
       var base = "MOM " + pickName + (pr.length ? " · 칭찬 " + pr.length + "명" : "");
-      var label = !st.me ? "내 이름을 먼저 골라 주세요" : !st.pick ? "MOM을 먼저 골라 주세요" : st.armed ? esc(base) + " — 한 번 더 누르면 확정" : esc(base) + " 투표하기";
+      var label = !st.pick ? "MOM을 먼저 골라 주세요" : st.armed ? esc(base) + " — 한 번 더 누르면 확정" : esc(base) + " 투표하기";
       box.innerHTML = head + '<p class="note">익명투표입니다. 한 기기에서 한 번만 할 수 있고, 변경 불가. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 3명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감됩니다.</p>" +
-        '<h3 class="vsub">내 이름 <small>투표 여부 확인용 · 누구를 뽑았는지는 연결되지 않아요</small></h3><div class="vgrid">' + meGrid + '</div><h3 class="vsub">1. MOM 선택 <small>1명</small></h3><div class="vgrid">' + momGrid + "</div>" + praiseSec +
-        '<div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick && st.me ? "" : " disabled") + ">" + label + "</button></div>";
+        '<h3 class="vsub">1. MOM 선택 <small>1명</small></h3><div class="vgrid">' + momGrid + "</div>" + praiseSec +
+        '<div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
       return;
     }
 
@@ -1430,41 +1427,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         (open ? '<button class="btn" type="button" data-act="vote-close" data-confirm="1" data-arm="한 번 더 누르면 마감">지금 마감</button>' : "") +
         '<button class="btn danger" type="button" data-act="vote-del" data-confirm="1">투표 삭제</button></div></div>';
     }
-    if (p && pollOpen(p)) html += votedPanel(p);
     box.innerHTML = html;
-  }
-  async function loadVoted(p) {
-    var st = S.vote; st.votedLast[p.id] = Date.now();
-    try {
-      var snap = await S.db.collection("polls/" + p.id + "/voted").get(), ids = {};
-      snap.docs.forEach(function (d) { ids[d.id] = 1; });
-      st.voted[p.id] = ids; delete st.votedErr[p.id];
-    } catch (e) { st.votedErr[p.id] = (e && e.code) || "net"; }
-    renderVoteAdmin();
-  }
-  function votedPanel(p) {
-    var st = S.vote, ids = st.voted[p.id], h = '<div class="sect-head"><h2>아직 투표 안 한 사람</h2></div><div class="panel-box">';
-    if (ids === undefined && !st.votedErr[p.id]) {
-      if (Date.now() - (st.votedLast[p.id] || 0) > 5000) loadVoted(p);
-      return h + '<p class="count">불러오는 중…</p></div>';
-    }
-    if (st.votedErr[p.id]) {
-      if (Date.now() - (st.votedLast[p.id] || 0) > 30000) loadVoted(p);
-      return h + '<p class="count">명단을 불러오지 못했어요. Firebase 규칙에 이 기능용 규칙이 추가됐는지 확인해 주세요.</p><div><button class="btn" type="button" data-act="voted-refresh">다시 확인</button></div></div>';
-    }
-    if (Date.now() - (st.votedLast[p.id] || 0) > 20000) loadVoted(p);
-    var n = Object.keys(ids).filter(function (id) { return p.candidates.indexOf(id) >= 0; }).length;
-    var missing = p.candidates.filter(function (id) { return !ids[id]; });
-    var untracked = Math.max(0, pollVotes(p) - n);
-    h += '<p class="count">' + progText(p) + " · 이름이 확인된 투표 " + n + "명</p>";
-    if (untracked) h += '<p class="count">이름을 남기지 않은 투표가 ' + untracked + "명 있어요(이 기능이 생기기 전에 한 투표). 아래 명단에는 이분들도 포함돼 있을 수 있어요.</p>";
-    h += missing.length ? '<p class="sharebox" style="white-space:normal">' + missing.map(function (id) { return esc(candName(p, id)); }).join(" · ") + "</p>" : '<p class="count">모두 투표했어요.</p>';
-    return h + '<div><button class="btn" type="button" data-act="voted-refresh">새로고침</button></div></div>';
   }
 
   async function submitVote() {
     var st = S.vote, p = curPoll();
-    if (!p || !st.pick || !st.me || st.busy) return;
+    if (!p || !st.pick || st.busy) return;
     if (!pollOpen(p)) { toast("투표가 마감됐어요"); renderVote(); return; }
     if (!st.armed) {
       st.armed = true; renderVote();
@@ -1481,7 +1449,6 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       b.update(fs.doc("polls/" + p.id), { votes: firebase.firestore.FieldValue.increment(1) });
       await withTimeout(b.commit());
       st.mine[p.id] = { choice: choice, praise: praise }; delete st.mineErr[p.id];
-      try { await withTimeout(S.db.doc("polls/" + p.id + "/voted/" + st.me).set({ at: Date.now() })); } catch (e2) {}
       toast("투표했어요");
     } catch (e) {
       var c = e && e.code;
@@ -1489,7 +1456,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       else if (c === "auth/operation-not-allowed") toast("투표 기능이 아직 준비되지 않았어요. 관리자에게 알려 주세요");
       else toast("투표하지 못했어요. 인터넷 연결을 확인해 주세요");
     }
-    st.busy = false; st.armed = false; st.pick = ""; st.praise = []; st.me = ""; renderVote(); renderRank();
+    st.busy = false; st.armed = false; st.pick = ""; st.praise = []; renderVote(); renderRank();
   }
   async function startPoll() {
     var st = S.vote, date = st.adminDate;
@@ -1521,11 +1488,6 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         docs.slice(i, i + 400).forEach(function (d) { b.delete(d.ref); });
         await withTimeout(b.commit());
       }
-      try {
-        var vs = await S.db.collection("polls/" + p.id + "/voted").get(), vb = S.db.fs.batch();
-        vs.docs.forEach(function (d) { vb.delete(d.ref); });
-        await withTimeout(vb.commit());
-      } catch (e3) {}
       await S.db.doc("polls/" + p.id).delete();
       var c3 = readCache(); delete c3[resKey(p)]; writeCache(c3);
       delete S.vote.res[p.id]; delete S.vote.mine[p.id]; toast("투표를 삭제했어요"); renderRank(); renderMatches(); renderRecords();
@@ -2072,8 +2034,6 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     else if (act === "report-copy") copyReportText();
     else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.praise = S.vote.praise.filter(function (x) { return x !== S.vote.pick; }); S.vote.armed = false; renderVote(); }
     else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= 3) toast("칭찬은 최대 3명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
-    else if (act === "vote-me") { S.vote.me = btn.dataset.id; S.vote.armed = false; renderVote(); }
-    else if (act === "voted-refresh") { var cp = curPoll(); if (cp) loadVoted(cp); }
     else if (act === "vote-submit") submitVote();
     else if (act === "vote-start") startPoll();
     else if (act === "vote-close") { if (confirmed(btn)) closePoll(); }
