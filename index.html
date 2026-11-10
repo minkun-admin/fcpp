@@ -1275,7 +1275,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           if (top.length && c.ms.length) {
             head = "⚽ " + club + " " + fmtDate(p.date) + " 결과가 업데이트됐어요!";
             var sm = m ? matchSummary(m) : null;
-            rankPart = (sm ? sm.line + " · " + sm.att + "명 참석\n" : "") + "\n[승점 순위 TOP 7]\n" + top.join("\n") + "\n\n";
+            rankPart = (sm ? sm.line + " · " + sm.att + "명 참석\n" : "") + "\n<승점 순위 TOP 7>\n" + top.join("\n") + "\n\n";
           }
         }
       } catch (e) { rankPart = ""; head = "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표"; }
@@ -1283,7 +1283,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
     var res = S.vote.res[p.id];
     if (!res) return "";
-    if (!res.total) return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n투표한 사람이 없었어요.";
+    if (!res.total) return "<" + club + " " + fmtDate(p.date) + " MOM 투표 결과>\n투표한 사람이 없었어요.";
     var medals = ["🥇", "🥈", "🥉"], lv = 0, prev = null, lines = [];
     resultRows(p, res).forEach(function (r) {
       if (r.n < 1) return;
@@ -1294,7 +1294,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var pr = p.candidates.map(function (id) { return { name: candName(p, id), n: res.praise && res.praise[id] || 0 }; })
       .filter(function (r) { return r.n > 0; }).sort(function (a, b) { return b.n - a.n || byName(a, b); }).slice(0, 5);
     var prLine = pr.length ? "\n\n👍 칭찬 받은 사람\n" + pr.map(function (r) { return r.name + " " + r.n; }).join(" · ") : "";
-    return "🏆 " + club + " " + fmtDate(p.date) + " MOM 투표 결과\n" + lines.join("\n") + prLine + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
+    return "<" + club + " " + fmtDate(p.date) + " MOM 투표 결과>\n" + lines.join("\n") + prLine + "\n\n총 " + res.total + "명 참여\n\n📱 전체 기록 보기\n" + url;
   }
 
   function tabBadge() {
