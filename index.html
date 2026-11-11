@@ -893,7 +893,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         var u = s.uni[t];
         return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
       }).join("");
-      var sub = s.g ? "팀 기록 " + s.g + "경기 · " + s.w + "승 " + s.d + "무 " + s.l + "패" : "팀이 기록된 경기가 없어요";
+      var sub = s.g ? s.w + "승 " + s.d + "무 " + s.l + "패" : "팀이 기록된 경기가 없어요";
 
       function uniBox(t, u, p) {
         if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
@@ -1539,7 +1539,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!total) return "";
     function row(label, n, d, cls) {
       var p = d ? Math.round(n / d * 100) : 0;
-      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>";
+      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>';
     }
     return '<div><h3>출석 경기 승률</h3><div class="awbox">' +
       row("승률", r.w, r.att, "W") +
