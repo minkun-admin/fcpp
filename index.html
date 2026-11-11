@@ -155,6 +155,7 @@ button { cursor: pointer; }
 .eyebrow { margin: 0; font-size: 0.85rem; opacity: 0.85; }
 .top { cursor: pointer; }
 .homeLink { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.visitBadge { align-self: flex-start; text-align: right; font-size: 0.78rem; line-height: 1.5; opacity: 0.85; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tagline { margin: 0.45rem 0 0; font-size: 0.9rem; opacity: 0.85; }
 h1 { margin: 0.1rem 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.05; letter-spacing: 0.01em; }
 .top-sub { margin: 0.55rem 0 0; font-size: 0.85rem; opacity: 0.85; }
@@ -486,7 +487,9 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         <p class="eyebrow" id="clubName">FC 평풋</p>
         <h1>스코어보드</h1>
         <p class="tagline">승점 · 출석 · 기록을 한눈에</p>
-      </div>    </div>  </div>
+      </div>
+      <div class="visitBadge" id="visitBadge" hidden></div>
+    </div>  </div>
 </header>
 
 <nav class="tabs" aria-label="화면 선택">
@@ -601,7 +604,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       <div class="btnrow"><button class="btn primary" type="button" data-act="report-img">이미지 공유·저장</button><button class="btn" type="button" data-act="report-copy">결산 글 복사</button></div>
     </div>
 
-    <div class="sect-head"><h2>방문 현황</h2><p>팀원이 앱을 연 횟수예요. 관리자 본인의 접속은 세지 않고, 같은 기기의 30분 안 재접속은 1회로 계산해요.</p></div>
+    <div class="sect-head"><h2>방문 현황</h2><p>팀원이 앱을 연 횟수예요. 화면 오른쪽 위에도 같은 숫자가 보여요. 관리자 본인의 접속은 세지 않고, 같은 기기의 30분 안 재접속은 1회로 계산해요.</p></div>
     <div class="panel-box">
       <p class="count" id="visitText">불러오는 중…</p>
       <div class="btnrow"><button class="btn" type="button" data-act="visit-refresh">새로고침</button></div>
@@ -1873,11 +1876,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       var inc = firebase.firestore.FieldValue.increment(1), data = { total: inc };
       data["d" + ymd(new Date(now))] = inc;
       await withTimeout(S.db.fs.doc("stats/visits").set(data, { merge: true }));
+      S.visits.last = 0; loadVisits();
     } catch (e) {}
   }
   S.visits = { data: null, err: "", last: 0, busy: false };
   async function loadVisits() {
-    var v = S.visits; if (v.busy || S.readOnly || !S.db) return;
+    var v = S.visits; if (v.busy || !S.db) return;
     v.busy = true; v.last = Date.now();
     try {
       var snap = await S.db.doc("stats/visits").get();
@@ -1886,15 +1890,19 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     v.busy = false; syncVisits(true);
   }
   function syncVisits(noLoad) {
-    var el = $("#visitText"); if (!el) return;
-    var v = S.visits;
-    if (S.readOnly) return;
+    var el = $("#visitText"), bd = $("#visitBadge"), v = S.visits;
+    if (!S.db || S.noDb) return;
     if (!noLoad && Date.now() - v.last > 60000) loadVisits();
-    if (v.err) { el.textContent = v.err === "permission-denied" ? "방문 통계를 읽을 권한이 아직 없어요. Firebase 규칙에 방문 통계용 규칙을 추가해 주세요." : "방문 통계를 불러오지 못했어요."; return; }
-    if (!v.data) { el.textContent = "불러오는 중…"; return; }
-    var d = v.data, today = Number(d["d" + ymd(new Date())]) || 0, week = 0;
+    if (v.err) {
+      if (bd) bd.hidden = true;
+      if (el) el.textContent = v.err === "permission-denied" ? "방문 통계를 읽을 권한이 아직 없어요. Firebase 규칙에 방문 통계용 규칙을 추가해 주세요." : "방문 통계를 불러오지 못했어요.";
+      return;
+    }
+    if (!v.data) { if (el) el.textContent = "불러오는 중…"; return; }
+    var d = v.data, total = Number(d.total) || 0, today = Number(d["d" + ymd(new Date())]) || 0, week = 0;
     for (var i = 0; i < 7; i++) { var dd = new Date(); dd.setDate(dd.getDate() - i); week += Number(d["d" + ymd(dd)]) || 0; }
-    el.textContent = "방문 " + (Number(d.total) || 0) + "회 · 오늘 " + today + "회 · 최근 7일 " + week + "회";
+    if (bd) { bd.hidden = false; bd.innerHTML = "방문 " + total + "회<br>오늘 " + today + "회"; }
+    if (el) el.textContent = "방문 " + total + "회 · 오늘 " + today + "회 · 최근 7일 " + week + "회";
   }
   setTimeout(trackVisit, 2500);
 
