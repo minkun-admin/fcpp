@@ -19,3 +19,18 @@ self.addEventListener("fetch", function (e) {
     }).catch(function () { return caches.match(req).then(function (m) { return m || caches.match("./index.html"); }); })
   );
 });
+/* 투표 마감 푸시 알림 (관리자 기기용) */
+self.addEventListener("push", function (e) {
+  var d = {};
+  try { var p = e.data ? e.data.json() : {}; d = p.data || p.notification || p || {}; } catch (err) { d = { title: "스코어보드", body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(d.title || "스코어보드", {
+    body: d.body || "", icon: "icon-192.png", badge: "icon-192.png", tag: "poll-closed", renotify: true
+  }));
+});
+self.addEventListener("notificationclick", function (e) {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) { if ("focus" in list[i]) return list[i].focus(); }
+    return self.clients.openWindow("./");
+  }));
+});
