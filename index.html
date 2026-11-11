@@ -600,6 +600,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       <pre class="sharebox" id="reportText"></pre>
       <div class="btnrow"><button class="btn primary" type="button" data-act="report-img">이미지 공유·저장</button><button class="btn" type="button" data-act="report-copy">결산 글 복사</button></div>
     </div>
+
+    <div class="sect-head"><h2>방문 현황</h2><p>팀원이 앱을 연 횟수예요. 관리자 본인의 접속은 세지 않고, 같은 기기의 30분 안 재접속은 1회로 계산해요.</p></div>
+    <div class="panel-box">
+      <p class="count" id="visitText">불러오는 중…</p>
+      <div class="btnrow"><button class="btn" type="button" data-act="visit-refresh">새로고침</button></div>
+    </div>
   </section>
   <footer class="foot" id="foot">
     <button class="linkbtn" type="button" data-act="login-open" id="loginBtn">관리자 로그인</button>
@@ -988,7 +994,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     document.documentElement.classList.toggle("ro", S.readOnly);
     $("#tab-admin").hidden = S.readOnly;
     if (S.readOnly && S.tab === "admin") setTab("matches");
-    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); syncReport(); renderVote();
+    renderHeader(); renderRank(); renderMatches(); renderAtt(); renderRecords(); renderMembers(); renderAdmin(false); syncSettings(); syncAuthUi(); syncShare(); syncReport(); renderVote(); syncVisits();
   }
 
   /* ---------- tabs ---------- */
@@ -1851,6 +1857,47 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (ev.target && ev.target.id === "reportMonth") { REP.key = ev.target.value; syncReport(); }
   });
 
+  /* ---------- 방문 카운터 (관리자만 확인) ---------- */
+  function ymd(d) { return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); }
+  async function trackVisit() {
+    try {
+      if (!S.db || S.noDb) return;
+      if (S.authReadyP) await S.authReadyP;
+      if (!S.readOnly) return;
+      try { if (localStorage.getItem("fcpp-admin") === "1") return; } catch (e) {}
+      var now = Date.now(), last = 0;
+      try { last = Number(localStorage.getItem("fcpp-lastvisit")) || 0; } catch (e) {}
+      if (now - last < 30 * 60000) return;
+      try { localStorage.setItem("fcpp-lastvisit", String(now)); } catch (e) {}
+      await ensureUser();
+      var inc = firebase.firestore.FieldValue.increment(1), data = { total: inc };
+      data["d" + ymd(new Date(now))] = inc;
+      await withTimeout(S.db.fs.doc("stats/visits").set(data, { merge: true }));
+    } catch (e) {}
+  }
+  S.visits = { data: null, err: "", last: 0, busy: false };
+  async function loadVisits() {
+    var v = S.visits; if (v.busy || S.readOnly || !S.db) return;
+    v.busy = true; v.last = Date.now();
+    try {
+      var snap = await S.db.doc("stats/visits").get();
+      v.data = snap.exists ? (snap.data() || {}) : {}; v.err = "";
+    } catch (e) { v.err = (e && e.code) || "net"; }
+    v.busy = false; syncVisits(true);
+  }
+  function syncVisits(noLoad) {
+    var el = $("#visitText"); if (!el) return;
+    var v = S.visits;
+    if (S.readOnly) return;
+    if (!noLoad && Date.now() - v.last > 60000) loadVisits();
+    if (v.err) { el.textContent = v.err === "permission-denied" ? "방문 통계를 읽을 권한이 아직 없어요. Firebase 규칙에 방문 통계용 규칙을 추가해 주세요." : "방문 통계를 불러오지 못했어요."; return; }
+    if (!v.data) { el.textContent = "불러오는 중…"; return; }
+    var d = v.data, today = Number(d["d" + ymd(new Date())]) || 0, week = 0;
+    for (var i = 0; i < 7; i++) { var dd = new Date(); dd.setDate(dd.getDate() - i); week += Number(d["d" + ymd(dd)]) || 0; }
+    el.textContent = "방문 " + (Number(d.total) || 0) + "회 · 오늘 " + today + "회 · 최근 7일 " + week + "회";
+  }
+  setTimeout(trackVisit, 2500);
+
   /* ---------- toast & errors ---------- */
   var toastTimer;
   function toast(msg) {
@@ -2139,6 +2186,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     else if (act === "share-copy") copyShare();
     else if (act === "report-img") shareReportImage();
     else if (act === "report-copy") copyReportText();
+    else if (act === "visit-refresh") { S.visits.last = 0; loadVisits(); }
     else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.praise = S.vote.praise.filter(function (x) { return x !== S.vote.pick; }); S.vote.armed = false; renderVote(); }
     else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= maxPraise(curPoll())) toast("칭찬은 최대 " + maxPraise(curPoll()) + "명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
     else if (act === "vote-submit") submitVote();
