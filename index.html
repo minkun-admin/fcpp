@@ -411,7 +411,10 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
 .streak.lose { background: #E3EDF7; color: #2B5A8C; }
 .recs { display: grid; gap: 0.6rem; }
-.rec { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 0 0.85rem; }
+.rec, .match, .latest, .board > .row { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
+.rec { padding: 0 0.85rem; }
+.board { display: grid; gap: 0.6rem; }
+.board > .row { padding: 0.85rem 0.9rem; }
 .rec summary { padding: 0.8rem 0; }
 .reportcv { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
 .panel-box .hint { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
