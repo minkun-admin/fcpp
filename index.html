@@ -195,6 +195,19 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .seg button[data-team="B"][aria-pressed="true"], .seg button[data-res="B"][aria-pressed="true"] { background: var(--teamB); color: var(--on-teamB); }
 .seg button[data-res="D"][aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .seg.wide { display: flex; }
+.awayonly { display: none; }
+.awaymode .awayonly { display: block; }
+.awaymode .rrow .seg.big:not(.awayonly), .awaymode .rrow .seg.tiny { display: none; }
+.awaymode .rrow .seg.awayonly { display: flex; }
+.seg button[data-awres="W"][aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg button[data-awres="L"][aria-pressed="true"] { background: var(--loss); color: var(--bg); }
+.seg button[data-awres="D"][aria-pressed="true"] { background: var(--draw); color: var(--bg); }
+.seg button[data-attend][aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.res.away { white-space: nowrap; }
+.res.awayW, .side.awayW .tag { background: var(--accent); color: var(--on-accent); }
+.res.awayL, .side.awayL .tag { background: var(--loss); color: var(--bg); }
+.res.awayD, .side.awayD .tag { background: var(--draw); color: var(--bg); }
+.side.away.awayW .names { color: var(--ink); font-weight: 700; }
 .seg.wide button { flex: 1; }
 
 /* leaderboard */
@@ -411,7 +424,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
 .streak.lose { background: #E3EDF7; color: #2B5A8C; }
 .awbox { display: grid; gap: 0.55rem; padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.aw { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.aw { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) 2.8rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
 .awl { color: var(--muted); font-weight: 700; }
 .awv { text-align: right; font-variant-numeric: tabular-nums; }
 .aws { color: var(--muted); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
@@ -553,6 +566,14 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         <input type="date" id="adminDate">
         <p class="count" id="adminWarn" hidden></p>
       </div>
+      <div>
+        <span class="fl">경기 종류</span>
+        <div class="seg wide" role="group" aria-label="경기 종류"><button type="button" data-awaymode="0" aria-pressed="true">내부 경기</button><button type="button" data-awaymode="1" aria-pressed="false">원정 경기</button></div>
+      </div>
+      <div class="awayonly">
+        <span class="fl">원정 결과 (참석자 전원)</span>
+        <div class="seg wide" role="group" aria-label="원정 결과"><button type="button" data-awres="W" aria-pressed="true">승</button><button type="button" data-awres="D" aria-pressed="false">무</button><button type="button" data-awres="L" aria-pressed="false">패</button></div>
+      </div>
     </div>
     <div class="admin-bar">
       <p class="count" id="adminCount" aria-live="polite"></p>
@@ -632,7 +653,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     members: [], matches: [], rules: Object.assign({}, DEFAULT_RULES),
     loaded: { m: false, x: false, r: false },
     tab: "matches", sheet: null, pendingMembers: false, attScrolled: false,
-    admin: { date: "", outcomes: {}, teams: {}, existing: null, dirty: false }
+    admin: { date: "", outcomes: {}, teams: {}, existing: null, dirty: false, away: false, awayRes: "W" }
   };
 
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
@@ -710,8 +731,18 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var hasD = has("D");
     return (has("W") || !hasD ? side("W", "승") : "") + (hasD ? side("D", "무") : "") + (has("L") || !hasD ? side("L", "패") : "");
   }
-  function sidesHtml(m, thumbs) { return m.outcomes ? outSidesHtml(m, thumbs) : sideHtml(m, "A") + sideHtml(m, "B"); }
+  function awayRes(m) {
+    var ks = Object.keys(m.outcomes || {}).map(function (k) { return m.outcomes[k]; }).filter(function (v) { return v === "W" || v === "D" || v === "L"; });
+    return ks[0] || "W";
+  }
+  function awayLabel(m) { var r = awayRes(m); return r === "W" ? "원정승" : r === "L" ? "원정패" : "원정무"; }
+  function awaySideHtml(m, thumbs) {
+    var names = S.members.filter(function (x) { return m.outcomes[x.id] === "W" || m.outcomes[x.id] === "D" || m.outcomes[x.id] === "L"; }).sort(byName).map(function (x) { return esc(x.name) + (thumbs && typeof thumbHtml === "function" ? thumbHtml(m.date, x.id) : ""); });
+    return '<div class="side away away' + awayRes(m) + '"><span class="tag">' + awayLabel(m) + '</span><span class="names">' + (names.length ? names.join(" · ") : "—") + "</span></div>";
+  }
+  function sidesHtml(m, thumbs) { return m.away && m.outcomes ? awaySideHtml(m, thumbs) : m.outcomes ? outSidesHtml(m, thumbs) : sideHtml(m, "A") + sideHtml(m, "B"); }
   function badgeHtml(m) {
+    if (m.away && m.outcomes) return '<span class="res away away' + awayRes(m) + '">' + awayLabel(m) + "</span>";
     if (m.outcomes) {
       var w = 0, d = 0, l = 0;
       Object.keys(m.outcomes).forEach(function (k) { if (m.outcomes[k] === "W") w++; else if (m.outcomes[k] === "D") d++; else if (m.outcomes[k] === "L") l++; });
@@ -804,7 +835,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var rows = c.rows.slice().sort(function (a, b) { return (b.att - a.att) || (wr[b.id] - wr[a.id]) || byName(a, b); });
     var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + ms.map(function (m) {
       return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
-        (m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
+        (m.away && m.outcomes ? '<span class="D">원정</span>' : m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
     }).join("") + "</tr>";
     var body = rows.map(function (r) {
       var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
@@ -828,8 +859,18 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function computeRecords() {
     var c = compute(), st = {}, used = 0;
     function blank() { return { g: 0, w: 0, d: 0, l: 0 }; }
-    S.members.forEach(function (m) { st[m.id] = { uni: { A: blank(), B: blank() }, mates: {}, g: 0, w: 0, d: 0, l: 0 }; });
+    var awayN = 0;
+    S.members.forEach(function (m) { st[m.id] = { uni: { A: blank(), B: blank() }, mates: {}, g: 0, w: 0, d: 0, l: 0, away: blank() }; });
     c.ms.forEach(function (m) {
+      if (m.away && m.outcomes) {
+        awayN++;
+        Object.keys(st).forEach(function (id) {
+          var o = outcome(m, id); if (!o) return;
+          var k = o === "W" ? "w" : o === "D" ? "d" : "l";
+          st[id].away.g++; st[id].away[k]++;
+        });
+        return;
+      }
       if (!m.teams) return;
       var ids = Object.keys(m.teams).filter(function (id) {
         return st[id] && (m.teams[id] === "A" || m.teams[id] === "B") && outcome(m, id);
@@ -846,7 +887,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         });
       });
     });
-    return { rows: c.rows, st: st, total: c.ms.length, used: used };
+    return { rows: c.rows, st: st, total: c.ms.length, used: used, awayN: awayN };
   }
   function renderRecords() {
     var box = $("#recBody"), note = $("#recNote");
@@ -860,7 +901,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       return;
     }
     var R = computeRecords();
-    if (!R.used) {
+    if (!R.used && !R.awayN) {
       note.textContent = "";
       box.innerHTML = emptyBlock("팀이 기록된 경기가 아직 없어요", "관리자 탭에서 경기를 기록할 때 이름 옆 노랑·주황 버튼도 함께 눌러 주세요.");
       return;
@@ -893,7 +934,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         var u = s.uni[t];
         return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
       }).join("");
-      var sub = s.g ? s.w + "승 " + s.d + "무 " + s.l + "패" : "팀이 기록된 경기가 없어요";
+      var sub = r.att ? r.w + "승 " + r.d + "무 " + r.l + "패" : "출석한 경기가 없어요";
 
       function uniBox(t, u, p) {
         if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
@@ -903,9 +944,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           (best === t ? '<span class="best-tag">이 유니폼일 때 승률이 더 좋아요</span>' : "") + "</div>";
       }
       var body;
-      if (!s.g) body = '<p class="rec-empty">팀이 기록된 경기에 나오면 여기에 보여요.</p>';
+      if (!s.g && !s.away.g) body = '<p class="rec-empty">팀이 기록된 경기에 나오면 여기에 보여요.</p>';
+      else if (!s.g) body = attendWinHtml(r, R.total, s);
       else {
-        body = attendWinHtml(r, R.total) + '<div><h3>유니폼 색별 승률</h3><div class="unis">' + uniBox("A", a, pa) + uniBox("B", b, pb) + "</div></div>" +
+        body = attendWinHtml(r, R.total, s) + '<div><h3>유니폼 색별 승률</h3><div class="unis">' + uniBox("A", a, pa) + uniBox("B", b, pb) + "</div></div>" +
           '<div><h3>함께 뛰면 (최대 5명)</h3><div class="mcols">' + mateCol("잘 이기는 팀원", "승률순", top, "W") + mateCol("잘 지는 팀원", "패율순", bot, "L") + "</div></div>";
       }
       return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
@@ -1094,6 +1136,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         else if (o === "L") { l++; att++; }
         else if (o === "D") { d++; att++; }
       });
+      if (m.away) return { line: "원정 " + (w ? "승" : l ? "패" : "무"), att: att };
       if (d && !w && !l) return { line: "무승부", att: att };
       if (tw.A && !tw.B) return { line: TEAM.A + " 승", att: att };
       if (tw.B && !tw.A) return { line: TEAM.B + " 승", att: att };
@@ -1535,15 +1578,15 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     return ' <span class="streak lose" title="' + s.n + '연패 중">💧 ' + s.n + "연패 중</span>";
   }
 
-  function attendWinHtml(r, total) {
+  function attendWinHtml(r, total, s) {
     if (!total) return "";
     function row(label, n, d, cls) {
       var p = d ? Math.round(n / d * 100) : 0;
       return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>';
     }
-    return '<div><h3>출석 경기 승률</h3><div class="awbox">' +
-      row("승률", r.w, r.att, "W") +
-      "</div></div>";
+    var h = row("전체", r.w, r.att, "W");
+    if (s && s.away && s.away.g) h += row("원정", s.away.w, s.away.g, "T");
+    return '<div><h3>출석 경기 승률</h3><div class="awbox">' + h + "</div></div>";
   }
 
   var REP = { key: "", sig: "", seq: 0, rep: null };
@@ -1591,12 +1634,14 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       prev = r.pts;
       return { name: r.name, pts: r.pts, w: r.w, d: r.d, l: r.l, lv: lv };
     });
+    var away = { g: 0, w: 0, d: 0, l: 0 };
+    ms.forEach(function (m) { if (m.away && m.outcomes) { away.g++; var ar = awayRes(m); if (ar === "W") away.w++; else if (ar === "L") away.l++; else away.d++; } });
     var maxP = rows.reduce(function (x, r) { return Math.max(x, r.praise); }, 0);
     var perfect = ms.length >= 2 ? rows.filter(function (r) { return r.att === ms.length; }).map(function (r) { return r.name; }).sort(function (a, b) { return a.localeCompare(b, "ko"); }) : [];
     return {
       key: key, label: monthLabel(key), games: ms.length, people: rows.length, top: top, moms: moms, pending: pending,
       praise: { n: maxP, names: maxP > 0 ? rows.filter(function (r) { return r.praise === maxP; }).map(function (r) { return r.name; }) : [] },
-      perfect: perfect
+      perfect: perfect, away: away
     };
   }
   function repText(rep) {
@@ -1607,6 +1652,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       out.push("", "👑 이달의 MOM");
       rep.moms.forEach(function (m) { out.push(fmtDate(m.date) + " " + m.names.join(", ")); });
     }
+    if (rep.away && rep.away.g) out.push("", "⚽ 원정 " + rep.away.g + "경기 " + rep.away.w + "승 " + rep.away.d + "무 " + rep.away.l + "패");
     if (rep.praise.n) out.push("", "👍 칭찬왕 " + nameList(rep.praise.names) + " (" + rep.praise.n + "개)");
     if (rep.perfect.length) out.push("", "🎖️ 개근 " + nameList(rep.perfect, 8));
     out.push("", "📱 전체 기록 보기", siteUrl());
@@ -1615,7 +1661,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 
   var CROWN_D = "M2.5 7.5l4.6 4.2L12 4l4.9 7.7 4.6-4.2-1.9 11H4.4l-1.9-11zM4.8 20.5h14.4V22H4.8z";
   var THUMB_D = "M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z";
-  function reportFontText(rep) { return repText(rep) + " 월간 승점 이달의 칭찬왕 개근 스코어보드 결산 승 무 패 점 경기 명 참석 " + location.host + location.pathname; }
+  function reportFontText(rep) { return repText(rep) + " 월간 승점 이달의 칭찬왕 개근 원정 스코어보드 결산 승 무 패 점 경기 명 참석 " + location.host + location.pathname; }
   function drawReport(cv, rep) {
     var W = 1080, P = 56;
     var DISP = '"Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
@@ -1708,6 +1754,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       var extra = [], tx0 = L + 230;
       if (rep.praise.n) extra.push({ k: "칭찬왕", d: THUMB_D, col: "#C2410C", lines: wrapNames(rep.praise.names, R - tx0 - 100, 2), s: rep.praise.n + "개" });
       if (rep.perfect.length) extra.push({ k: "개근", d: null, col: GREEN, lines: wrapNames(rep.perfect, R - tx0 - 28, 3), s: "" });
+      if (rep.away && rep.away.g) extra.push({ k: "원정", d: null, col: GREEN, lines: [rep.away.g + "경기 " + rep.away.w + "승 " + rep.away.d + "무 " + rep.away.l + "패"], s: "" });
       if (extra.length) {
         extra.forEach(function (e) { e.h = Math.max(86, e.lines.length * 54 + 32); });
         var h3 = 24 + extra.reduce(function (t, e) { return t + e.h; }, 0) + 12;
@@ -1915,6 +1962,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function adminLoad() {
     var ad = S.admin, m = S.matches.filter(function (x) { return x.id === ad.date; })[0];
     ad.outcomes = {}; ad.teams = {}; ad.existing = m ? (m.outcomes ? "direct" : "team") : null;
+    ad.away = !!(m && m.away && m.outcomes); ad.awayRes = ad.away ? awayRes(m) : "W";
     if (m) S.members.forEach(function (mb) {
       var o = outcome(m, mb.id);
       if (o === "W" || o === "D" || o === "L") ad.outcomes[mb.id] = o;
@@ -1939,20 +1987,26 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       return '<div class="rrow" data-id="' + esc(r.id) + '"><div class="rwho"><span class="rn">' + esc(r.name) + '</span><div class="seg tiny" role="group" aria-label="' + esc(r.name) + ' 팀">' +
         '<button type="button" data-atm="A" aria-pressed="false">노랑</button><button type="button" data-atm="B" aria-pressed="false">주황</button></div></div>' +
         '<div class="seg big" role="group" aria-label="' + esc(r.name) + ' 결과">' +
-        '<button type="button" data-out="W" aria-pressed="false">승</button><button type="button" data-out="D" aria-pressed="false">무</button><button type="button" data-out="L" aria-pressed="false">패</button></div></div>';
+        '<button type="button" data-out="W" aria-pressed="false">승</button><button type="button" data-out="D" aria-pressed="false">무</button><button type="button" data-out="L" aria-pressed="false">패</button></div>' +
+        '<div class="seg big awayonly" role="group" aria-label="' + esc(r.name) + ' 참석"><button type="button" data-attend="1" aria-pressed="false">참석</button></div></div>';
     }).join("");
     syncAdmin();
   }
   function syncAdmin() {
     var ad = S.admin, w = 0, d = 0, l = 0, total = 0, ta = 0, tb = 0;
+    $("#panel-admin").classList.toggle("awaymode", !!ad.away);
+    document.querySelectorAll("[data-awaymode]").forEach(function (b) { b.setAttribute("aria-pressed", String((b.dataset.awaymode === "1") === !!ad.away)); });
+    document.querySelectorAll("[data-awres]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.awres === ad.awayRes)); });
     document.querySelectorAll("#adminList .rrow").forEach(function (row) {
       var id = row.dataset.id, o = ad.outcomes[id] || "", t = ad.teams[id] || "";
       total++; if (o === "W") w++; else if (o === "D") d++; else if (o === "L") l++;
       if (o) { if (t === "A") ta++; else if (t === "B") tb++; }
       row.querySelectorAll("[data-out]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.out === o)); });
+      row.querySelectorAll("[data-attend]").forEach(function (b) { b.setAttribute("aria-pressed", String(!!o)); });
       row.querySelectorAll("[data-atm]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.atm === t)); });
     });
-    $("#adminCount").textContent = "승 " + w + " · 무 " + d + " · 패 " + l + " · 결석 " + (total - w - d - l) + " · " + TEAM.A + " " + ta + " · " + TEAM.B + " " + tb;
+    $("#adminCount").textContent = ad.away ? "원정 " + (ad.awayRes === "W" ? "승" : ad.awayRes === "L" ? "패" : "무") + " · 참석 " + (w + d + l) + "명 · 결석 " + (total - w - d - l) + "명" :
+      "승 " + w + " · 무 " + d + " · 패 " + l + " · 결석 " + (total - w - d - l) + " · " + TEAM.A + " " + ta + " · " + TEAM.B + " " + tb;
     var warn = $("#adminWarn");
     if (ad.existing === "team") {
       warn.hidden = false; warn.className = "warn";
@@ -1967,6 +2021,21 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (ad.teams[id] === t) delete ad.teams[id]; else ad.teams[id] = t;
     ad.dirty = true; syncAdmin();
   }
+  function adminAwayMode(on) {
+    var ad = S.admin; ad.away = on; ad.teams = {};
+    Object.keys(ad.outcomes).forEach(function (k) { ad.outcomes[k] = on ? ad.awayRes : ad.outcomes[k]; });
+    ad.dirty = true; syncAdmin();
+  }
+  function adminAwayRes(r) {
+    var ad = S.admin; ad.awayRes = r;
+    Object.keys(ad.outcomes).forEach(function (k) { ad.outcomes[k] = r; });
+    ad.dirty = true; syncAdmin();
+  }
+  function adminAttend(btn) {
+    var ad = S.admin, id = btn.closest(".rrow").dataset.id;
+    if (ad.outcomes[id]) delete ad.outcomes[id]; else ad.outcomes[id] = ad.awayRes;
+    ad.dirty = true; syncAdmin();
+  }
   function adminPick(btn) {
     var ad = S.admin, id = btn.closest(".rrow").dataset.id, o = btn.dataset.out;
     if (ad.outcomes[id] === o) delete ad.outcomes[id]; else ad.outcomes[id] = o;
@@ -1979,9 +2048,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     Object.keys(ad.outcomes).forEach(function (k) { var v = ad.outcomes[k]; if (v === "W" || v === "D" || v === "L") out[k] = v; });
     if (!Object.keys(out).length) { toast("승, 무, 패 중 하나를 한 명 이상 눌러 주세요"); return; }
     var tm = {};
-    Object.keys(out).forEach(function (k) { if (ad.teams[k] === "A" || ad.teams[k] === "B") tm[k] = ad.teams[k]; });
+    if (ad.away) Object.keys(out).forEach(function (k) { out[k] = ad.awayRes; });
+    else Object.keys(out).forEach(function (k) { if (ad.teams[k] === "A" || ad.teams[k] === "B") tm[k] = ad.teams[k]; });
     try {
-      await S.db.doc("matches/" + ad.date).set({ date: ad.date, outcomes: out, teams: tm, updatedAt: Date.now() });
+      var docv = { date: ad.date, outcomes: out, teams: tm, updatedAt: Date.now() };
+      if (ad.away) docv.away = true;
+      await S.db.doc("matches/" + ad.date).set(docv);
       ad.dirty = false; toast("저장했어요. 아래에서 카톡 공유 글을 복사하세요");
       setTimeout(function () { syncShare(); var h = $("#shareHead"); if (h) h.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350);
     } catch (e) { fail(e); }
@@ -2011,6 +2083,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var t = ev.target;
     if (t.id === "overlay") { closeSheet(); return; }
     if (t.id === "loginOv") { closeLogin(); return; }
+    var am = t.closest("[data-awaymode]");
+    if (am) { adminAwayMode(am.dataset.awaymode === "1"); return; }
+    var ar = t.closest("[data-awres]");
+    if (ar) { adminAwayRes(ar.dataset.awres); return; }
+    var at = t.closest("[data-attend]");
+    if (at) { adminAttend(at); return; }
     var ob = t.closest("[data-out]");
     if (ob) { adminPick(ob); return; }
     var atm = t.closest("[data-atm]");
