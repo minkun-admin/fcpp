@@ -411,7 +411,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
 .streak.lose { background: #E3EDF7; color: #2B5A8C; }
 .awbox { display: grid; gap: 0.55rem; padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.aw { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem 3.4rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.aw { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
 .awl { color: var(--muted); font-weight: 700; }
 .awv { text-align: right; font-variant-numeric: tabular-nums; }
 .aws { color: var(--muted); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
@@ -1539,7 +1539,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!total) return "";
     function row(label, n, d, cls) {
       var p = d ? Math.round(n / d * 100) : 0;
-      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b><span class="aws">' + n + "/" + d + "</span></div>";
+      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>";
     }
     return '<div><h3>출석 경기 승률</h3><div class="awbox">' +
       row("승률", r.w, r.att, "W") +
