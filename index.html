@@ -1198,6 +1198,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       .sort(function (a, b) { return tms(b.startsAt) - tms(a.startsAt); });
   }
   function curPoll() { return pollList()[0] || null; }
+  function maxPraise(p) {
+    var m = p && S.matches.filter(function (x) { return x.id === p.date; })[0];
+    return m && m.away ? 2 : 3;
+  }
   function pollVotes(p) { return Number(p.votes) || 0; }
   function allVoted(p) { return p.candidates.length > 0 && pollVotes(p) >= p.candidates.length; }
   function pollOpen(p) { return Date.now() < tms(p.endsAt) && !allVoted(p); }
@@ -1336,7 +1340,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           }
         }
       } catch (e) { rankPart = ""; head = "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표"; }
-      return head + "\n" + rankPart + "🗳️ 이날 MOM과 칭찬하고 싶은 사람(최대 3명)을 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 순위 확인 · 투표하러 가기\n" + url;
+      return head + "\n" + rankPart + "🗳️ 이날 MOM과 칭찬하고 싶은 사람(최대 " + maxPraise(p) + "명)을 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 순위 확인 · 투표하러 가기\n" + url;
     }
     var res = S.vote.res[p.id];
     if (!res) return "";
@@ -1416,7 +1420,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }).join("");
       var praiseSec = "";
       if (st.pick) {
-        praiseSec = '<h3 class="vsub">2. 칭찬하기 <small>선택 · 최대 3명 · ' + pr.length + "/3</small></h3>" +
+        praiseSec = '<h3 class="vsub">2. 칭찬하기 <small>선택 · 최대 ' + maxPraise(p) + '명 · ' + pr.length + "/" + maxPraise(p) + "</small></h3>" +
           '<div class="vgrid">' + p.candidates.filter(function (id) { return id !== st.pick; }).map(function (id) {
             var on = pr.indexOf(id) >= 0;
             return '<button class="vopt vpr" type="button" data-act="vote-praise" data-id="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? thumbIcon() + " " : "") + esc(candName(p, id)) + "</button>";
@@ -1424,7 +1428,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }
       var base = "MOM " + pickName + (pr.length ? " · 칭찬 " + pr.length + "명" : "");
       var label = !st.pick ? "MOM을 먼저 골라 주세요" : st.armed ? esc(base) + " — 한 번 더 누르면 확정" : esc(base) + " 투표하기";
-      box.innerHTML = head + '<p class="note">익명투표입니다. 한 기기에서 한 번만 할 수 있고, 변경 불가. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 3명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감됩니다.</p>" +
+      box.innerHTML = head + '<p class="note">익명투표입니다. 한 기기에서 한 번만 할 수 있고, 변경 불가. 이날 참석한 ' + p.candidates.length + "명 중에서 MOM 한 명(본인 포함)을 고르고, 칭찬하고 싶은 사람을 최대 " + maxPraise(p) + "명까지 더 고를 수 있어요(선택). 참석한 분만 투표해 주세요. " + p.candidates.length + "명이 모두 투표하면 바로 마감됩니다.</p>" +
         '<h3 class="vsub">1. MOM 선택 <small>1명</small></h3><div class="vgrid">' + momGrid + "</div>" + praiseSec +
         '<div class="votego"><button class="btn primary" type="button" data-act="vote-submit"' + (st.pick ? "" : " disabled") + ">" + label + "</button></div>";
       return;
@@ -1498,7 +1502,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
     st.busy = true;
     var choice = st.pick;
-    var praise = st.praise.filter(function (id, i, a) { return id !== choice && p.candidates.indexOf(id) >= 0 && a.indexOf(id) === i; }).slice(0, 3);
+    var praise = st.praise.filter(function (id, i, a) { return id !== choice && p.candidates.indexOf(id) >= 0 && a.indexOf(id) === i; }).slice(0, maxPraise(p));
     try {
       var u = await ensureUser();
       var fs = S.db.fs, b = fs.batch();
@@ -2136,7 +2140,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     else if (act === "report-img") shareReportImage();
     else if (act === "report-copy") copyReportText();
     else if (act === "vote-pick") { S.vote.pick = btn.dataset.id; S.vote.praise = S.vote.praise.filter(function (x) { return x !== S.vote.pick; }); S.vote.armed = false; renderVote(); }
-    else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= 3) toast("칭찬은 최대 3명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
+    else if (act === "vote-praise") { var v = S.vote, pid = btn.dataset.id; if (!v.pick) toast("먼저 MOM을 골라 주세요"); else if (v.praise.indexOf(pid) >= 0) v.praise = v.praise.filter(function (x) { return x !== pid; }); else if (v.praise.length >= maxPraise(curPoll())) toast("칭찬은 최대 " + maxPraise(curPoll()) + "명까지예요"); else v.praise.push(pid); v.armed = false; renderVote(); }
     else if (act === "vote-submit") submitVote();
     else if (act === "vote-start") startPoll();
     else if (act === "vote-close") { if (confirmed(btn)) closePoll(); }
