@@ -411,13 +411,13 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .streak { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 99px; background: #FFE8D6; color: #B4400A; font-size: 0.76rem; font-weight: 700; white-space: nowrap; vertical-align: 0.1em; }
 .streak.lose { background: #E3EDF7; color: #2B5A8C; }
 .awbox { display: grid; gap: 0.55rem; padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.aw { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr) 2.8rem 2.6rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.aw { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem 3.4rem; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
 .awl { color: var(--muted); font-weight: 700; }
 .awv { text-align: right; font-variant-numeric: tabular-nums; }
 .aws { color: var(--muted); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
 .bar i.P { background: var(--muted); }
 .bar i.T { background: var(--teamB); }
-@media (max-width: 420px) { .aw { grid-template-columns: 6.2rem minmax(0, 1fr) 2.6rem; } .aws { display: none; } }
+
 .recs { display: grid; gap: 0.6rem; }
 .rec, .match, .latest, .board > .row { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
 .rec { padding: 0 0.85rem; }
@@ -1541,10 +1541,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       var p = d ? Math.round(n / d * 100) : 0;
       return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b><span class="aws">' + n + "/" + d + "</span></div>";
     }
-    return '<div><h3>참석률 대비 승률</h3><div class="awbox">' +
-      row("출석률", r.att, total, "P") +
-      row("출석 경기 승률", r.w, r.att, "W") +
-      row("전체 대비 승", r.w, total, "T") +
+    return '<div><h3>출석 경기 승률</h3><div class="awbox">' +
+      row("승률", r.w, r.att, "W") +
       "</div></div>";
   }
 
