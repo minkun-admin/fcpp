@@ -28,4 +28,17 @@ function dueMessages(polls, now) {
     };
   });
 }
-module.exports = { toMs: toMs, fmtDate: fmtDate, isClosed: isClosed, dueMessages: dueMessages };
+/* 매월 1일: 지난달 결산 알림 문구 (한국 시간 기준 날짜로 계산) */
+function monthlyMessage(now) {
+  var k = new Date(now + 9 * 3600 * 1000); // KST
+  var y = k.getUTCFullYear(), mo = k.getUTCMonth() + 1; // 이번 달
+  var py = mo === 1 ? y - 1 : y, pm = mo === 1 ? 12 : mo - 1;
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  var start = py + "-" + pad(pm) + "-01", end = y + "-" + pad(mo) + "-01";
+  return {
+    start: start, end: end,
+    title: pm + "월 결산이 완료되었습니다",
+    body: "관리자 탭 > 월간 결산에서 이미지를 만들어 카톡방에 공유하세요."
+  };
+}
+module.exports = { toMs: toMs, fmtDate: fmtDate, isClosed: isClosed, dueMessages: dueMessages, monthlyMessage: monthlyMessage };

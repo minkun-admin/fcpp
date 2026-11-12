@@ -1651,16 +1651,18 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       });
       return { id: mb.id, name: mb.name || "", w: w, d: d, l: l, pts: pts, att: w + d + l, praise: 0 };
     }).filter(function (r) { return r.att > 0; });
-    var moms = [], pending = 0;
-    ms.forEach(function (m) {
+    var moms = [], pending = 0, pr = {};
+    allMatches().filter(function (m) { return monthKey(m.date) === key; }).forEach(function (m) {
       var p = S.polls.filter(function (x) { return x.id === m.date; })[0];
       if (!p) return;
       var res = pollOpen(p) ? null : resOf(p.id);
       if (!res) { pending++; return; }
       var rr = resultRows(p, res), max = rr.length ? rr[0].n : 0;
-      if (max > 0) moms.push({ date: m.date, names: rr.filter(function (x) { return x.n === max; }).map(function (x) { return x.name; }) });
-      rows.forEach(function (r) { r.praise += (res.praise && res.praise[r.id]) || 0; });
+      if (max > 0) moms.push({ date: m.date, away: !!m.away, names: rr.filter(function (x) { return x.n === max; }).map(function (x) { return x.name; }) });
+      Object.keys(res.praise || {}).forEach(function (id) { pr[id] = (pr[id] || 0) + (res.praise[id] || 0); });
     });
+    rows.forEach(function (r) { r.praise = pr[r.id] || 0; });
+    var prAll = S.members.map(function (mb) { return { name: mb.name || "", n: pr[mb.id] || 0 }; }).filter(function (x) { return x.n > 0; });
     var sorted = rows.slice().sort(function (a, b) { return b.pts - a.pts || b.att - a.att || b.w - a.w || byName(a, b); });
     var lv = 0, prev = null;
     var top = sorted.slice(0, 7).map(function (r) {
@@ -1670,11 +1672,11 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     });
     var away = { g: 0, w: 0, d: 0, l: 0 };
     allMatches().filter(function (m) { return monthKey(m.date) === key; }).forEach(function (m) { if (m.away && m.outcomes) { away.g++; var ar = awayRes(m); if (ar === "W") away.w++; else if (ar === "L") away.l++; else away.d++; } });
-    var maxP = rows.reduce(function (x, r) { return Math.max(x, r.praise); }, 0);
+    var maxP = prAll.reduce(function (x, r) { return Math.max(x, r.n); }, 0);
     var perfect = ms.length >= 2 ? rows.filter(function (r) { return r.att === ms.length; }).map(function (r) { return r.name; }).sort(function (a, b) { return a.localeCompare(b, "ko"); }) : [];
     return {
       key: key, label: monthLabel(key), games: ms.length, people: rows.length, top: top, moms: moms, pending: pending,
-      praise: { n: maxP, names: maxP > 0 ? rows.filter(function (r) { return r.praise === maxP; }).map(function (r) { return r.name; }) : [] },
+      praise: { n: maxP, names: maxP > 0 ? prAll.filter(function (r) { return r.n === maxP; }).map(function (r) { return r.name; }) : [] },
       perfect: perfect, away: away
     };
   }
@@ -1684,7 +1686,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     rep.top.forEach(function (r) { out.push((r.lv <= 3 ? medals[r.lv - 1] : String(r.lv)) + " " + r.name + " " + fmtN(r.pts) + "점"); });
     if (rep.moms.length) {
       out.push("", "👑 이달의 MOM");
-      rep.moms.forEach(function (m) { out.push(fmtDate(m.date) + " " + m.names.join(", ")); });
+      rep.moms.forEach(function (m) { out.push(fmtDate(m.date) + (m.away ? " 원정" : "") + " " + m.names.join(", ")); });
     }
     if (rep.away && rep.away.g) out.push("", "⚽ 원정 " + rep.away.g + "경기 " + rep.away.w + "승 " + rep.away.d + "무 " + rep.away.l + "패");
     if (rep.praise.n) out.push("", "👍 칭찬왕 " + nameList(rep.praise.names) + " (" + rep.praise.n + "개)");
@@ -1761,6 +1763,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           rep.moms.forEach(function (m, i) {
             var cy = y + 110 + i * 64 + 32;
             c.textAlign = "left"; c.fillStyle = MUTED; c.font = "400 32px " + BODY; c.fillText(fmtDate(m.date), L, cy + 11);
+            if (m.away) { var dw = c.measureText(fmtDate(m.date)).width; c.fillStyle = "#7B4BC4"; c.font = "700 26px " + BODY; c.fillText("원정", L + dw + 8, cy + 10); }
             c.fillStyle = INK; c.font = "700 42px " + BODY; c.fillText(fit(c, m.names.join(" · "), R - (L + 230)), L + 230, cy + 15);
           });
         }
