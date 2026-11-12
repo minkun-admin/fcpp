@@ -306,8 +306,9 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .dot { display: inline-block; width: 0.6rem; height: 0.6rem; margin-right: 0.25rem; border-radius: 50%; vertical-align: 0.05em; }
 .dot.A { background: var(--teamA); }
 .dot.B { background: var(--teamB); }
-.ch.tA { box-shadow: inset 0 -4px 0 var(--teamA); }
-.ch.tB { box-shadow: inset 0 -4px 0 var(--teamB); }
+.ch.tA { box-shadow: inset 0 -6px 0 var(--teamA); }
+.ch.tB { box-shadow: inset 0 -6px 0 var(--teamB); }
+.ch.tA, .ch.tB { padding-bottom: 2px; }
 .admin-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; }
 .admin-bar .count { margin: 0; }
 .savebar { position: sticky; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
