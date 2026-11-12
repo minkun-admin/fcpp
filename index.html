@@ -53,6 +53,7 @@
   --win: #17663A;
   --win-bg: #D6EEDD;
   --away-bg: #E4D9F5;
+  --away-ink: #7B4BC4;
   --draw: #55645A;
   --draw-bg: #E3E8E4;
   --loss: #A33A30;
@@ -85,6 +86,7 @@
     --win: #6FD890;
     --win-bg: #1B3D29;
     --away-bg: #3A2B5C;
+  --away-ink: #B79CF0;
     --draw: #A5B8AA;
     --draw-bg: #243228;
     --loss: #F29A91;
@@ -115,6 +117,7 @@
   --win: #6FD890;
   --win-bg: #1B3D29;
   --away-bg: #3A2B5C;
+  --away-ink: #B79CF0;
   --draw: #A5B8AA;
   --draw-bg: #243228;
   --loss: #F29A91;
@@ -210,6 +213,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .seg button[data-attend][aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .res.away { white-space: nowrap; }
 .res.away, .side.away .tag { background: linear-gradient(135deg, #1B2A6B 0%, #6A3FA6 100%); color: #fff; }
+.awsub.awpur { color: var(--away-ink); }
 .awsub { display: block; color: var(--ink); font-weight: 700; }
 .side.away.awayW .names { color: var(--ink); font-weight: 700; }
 .seg.wide button { flex: 1; }
@@ -958,7 +962,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
       }).join("");
       var aw = s.away, sub = r.att ? '<span class="awsub">평풋 ' + r.w + "승 " + r.d + "무 " + r.l + "패</span>" : "출석한 경기가 없어요";
-      if (aw.g) sub += '<span class="awsub">원정 ' + aw.w + "승 " + aw.d + "무 " + aw.l + "패</span>";
+      if (aw.g) sub += '<span class="awsub awpur">원정 ' + aw.w + "승 " + aw.d + "무 " + aw.l + "패</span>";
 
       function uniBox(t, u, p) {
         if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
