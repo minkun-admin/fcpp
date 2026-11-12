@@ -1701,7 +1701,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 
   var CROWN_D = "M2.5 7.5l4.6 4.2L12 4l4.9 7.7 4.6-4.2-1.9 11H4.4l-1.9-11zM4.8 20.5h14.4V22H4.8z";
   var THUMB_D = "M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z";
-  function reportFontText(rep) { return repText(rep) + " 월간 승점 이달의 칭찬왕 개근 원정 스코어보드 결산 승 무 패 점 경기 명 참석 " + location.host + location.pathname; }
+  function reportFontText(rep) { return repText(rep) + " 월간 승점 이달의 칭찬왕 개근 원정 스코어보드 결산 승 무 패 점 경기 명 참석"; }
   function drawReport(cv, rep) {
     var W = 1080, P = 56;
     var DISP = '"Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
@@ -1816,11 +1816,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         }
         y += h3 + 28;
       }
-      if (draw) {
-        c.textAlign = "center"; c.fillStyle = MUTED; c.font = "400 28px " + BODY;
-        c.fillText(location.host + location.pathname.replace(/index\.html$/, "").replace(/\/$/, ""), W / 2, y + 40);
-      }
-      return y + 90;
+      return y + 16;
     }
     var m = document.createElement("canvas").getContext("2d");
     var H = layout(m, false);
