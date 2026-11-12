@@ -1454,7 +1454,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       }).join("");
       var praiseSec = "";
       if (st.pick) {
-        praiseSec = '<h3 class="vsub">2. 칭찬하기 <small>선택 · 최대 ' + maxPraise(p) + '명 · ' + pr.length + "/" + maxPraise(p) + "</small></h3>" +
+        praiseSec = '<h3 class="vsub">2. 칭찬하기 <small>선택 (안 골라도 돼요) · 최대 ' + maxPraise(p) + '명 · ' + pr.length + "/" + maxPraise(p) + "</small></h3>" +
           '<div class="vgrid">' + p.candidates.filter(function (id) { return id !== st.pick; }).map(function (id) {
             var on = pr.indexOf(id) >= 0;
             return '<button class="vopt vpr" type="button" data-act="vote-praise" data-id="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? thumbIcon() + " " : "") + esc(candName(p, id)) + "</button>";
