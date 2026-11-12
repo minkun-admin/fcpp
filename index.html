@@ -961,8 +961,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         var u = s.uni[t];
         return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
       }).join("");
-      var aw = s.away, sub = r.att ? '<span class="awsub">평풋 ' + r.w + "승 " + r.d + "무 " + r.l + "패</span>" : "출석한 경기가 없어요";
-      if (aw.g) sub += '<span class="awsub awpur">원정 ' + aw.w + "승 " + aw.d + "무 " + aw.l + "패</span>";
+      var aw = s.away, sub = r.att ? '<span class="awsub">평풋 ' + r.w + "승 " + r.d + "무 " + r.l + "패" + (typeof thumbTotalHtml === "function" ? thumbTotalHtml(r.id, false) : "") + "</span>" : "출석한 경기가 없어요";
+      if (aw.g) sub += '<span class="awsub awpur">원정 ' + aw.w + "승 " + aw.d + "무 " + aw.l + "패" + (typeof thumbTotalHtml === "function" ? thumbTotalHtml(r.id, true) : "") + "</span>";
 
       function uniBox(t, u, p) {
         if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
@@ -979,7 +979,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           '<div><h3>함께 뛰면 (최대 5명)</h3><div class="mcols">' + mateCol("잘 이기는 팀원", "승률순", top, "W") + mateCol("잘 지는 팀원", "패율순", bot, "L") + "</div></div>";
       }
       return '<details class="rec" data-id="' + esc(r.id) + '"' + (openIds[r.id] ? " open" : "") + '><summary><span class="rk">' + r.rank +
-        '</span><span class="who"><span class="nm">' + esc(r.name) + streakHtml(r.id) + '</span><span class="sub">' + sub + thumbTotalHtml(r.id) + '</span></span><span class="minis">' + minis +
+        '</span><span class="who"><span class="nm">' + esc(r.name) + streakHtml(r.id) + '</span><span class="sub">' + sub + '</span></span><span class="minis">' + minis +
         '</span></summary><div class="rec-body">' + body + "</div></details>";
     }).join("") + "</div>";
   }
@@ -1226,9 +1226,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       .sort(function (a, b) { return tms(b.startsAt) - tms(a.startsAt); });
   }
   function curPoll() { return pollList()[0] || null; }
-  function maxPraise(p) {
-    var m = p && S.matches.filter(function (x) { return x.id === p.date; })[0];
-    return m && m.away ? 2 : 3;
+  function maxPraise(p) { return 3; }
+  function pollAway(p) {
+    var m = S.matches.filter(function (x) { return x.id === p.date; })[0];
+    return !!(m && m.away);
   }
   function pollVotes(p) { return Number(p.votes) || 0; }
   function allVoted(p) { return p.candidates.length > 0 && pollVotes(p) >= p.candidates.length; }
@@ -1312,8 +1313,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     }
   }
   function praiseOf(pollId, memberId) { var r = resOf(pollId); return r && r.praise ? r.praise[memberId] || 0 : 0; }
-  function praiseTotal(memberId) {
-    return S.polls.reduce(function (sum, p) { return sum + (pollOpen(p) ? 0 : praiseOf(p.id, memberId)); }, 0);
+  function praiseTotal(memberId, away) {
+    return S.polls.reduce(function (sum, p) { return sum + (pollOpen(p) || pollAway(p) !== !!away ? 0 : praiseOf(p.id, memberId)); }, 0);
   }
   function thumbIcon() {
     return '<svg class="ti" viewBox="0 -1 24 24" aria-hidden="true"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
@@ -1326,8 +1327,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var max = 0; Object.keys(r.counts).forEach(function (k) { if (r.counts[k] > max) max = r.counts[k]; });
     return max > 0 && r.counts[memberId] === max;
   }
-  function momTotal(memberId) {
-    return S.polls.reduce(function (sum, p) { return sum + (!pollOpen(p) && isMom(p.id, memberId) ? 1 : 0); }, 0);
+  function momTotal(memberId, away) {
+    return S.polls.reduce(function (sum, p) { return sum + (!pollOpen(p) && pollAway(p) === !!away && isMom(p.id, memberId) ? 1 : 0); }, 0);
   }
   function thumbHtml(pollId, memberId) {
     var n = praiseOf(pollId, memberId), k = isMom(pollId, memberId);
@@ -1340,8 +1341,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var b = Object.keys(m.teams || {}).filter(function (k) { return m.teams[k] === "B"; }).length;
     return a + " : " + b;
   }
-  function thumbTotalHtml(memberId) {
-    var n = praiseTotal(memberId), k = momTotal(memberId);
+  function thumbTotalHtml(memberId, away) {
+    var n = praiseTotal(memberId, away), k = momTotal(memberId, away);
     return (k ? ' · <span class="thumb" title="MOM ' + k + '">' + crownIcon() + k + "</span>" : "") + (n ? ' · <span class="thumb" title="칭찬 ' + n + '">' + thumbIcon() + n + "</span>" : "");
   }
   function resultRows(p, res) {
@@ -1355,6 +1356,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       try {
         if (ready()) {
           var c = compute(), m = c.ms.filter(function (x) { return x.date === p.date; })[0];
+          if (!m && pollAway(p)) throw new Error("away");
           var medals = ["🥇", "🥈", "🥉"], lv = 0, prevPts = null;
           var top = c.rows.slice(0, 7).map(function (r) {
             if (prevPts === null || r.pts !== prevPts) lv++;
@@ -1491,7 +1493,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var ae = document.activeElement;
     if (ae && box.contains(ae) && ae.tagName === "SELECT") return;
     if (!ready() || !S.vote.pollsLoaded) { box.innerHTML = ""; return; }
-    var st = S.vote, ms = sortedMatches().filter(function (m) { return attendeesOf(m).length; }).reverse();
+    var st = S.vote, ms = allMatches().filter(function (m) { return attendeesOf(m).length; }).reverse();
     if (!st.adminDate || !ms.some(function (m) { return m.date === st.adminDate; })) st.adminDate = ms[0] ? ms[0].date : "";
     var html = '<div class="sect-head"><h2>투표 관리</h2><p>경기를 저장한 뒤 투표를 시작하세요. 그날 참석한 멤버가 후보가 되고, ' + VOTE_HOURS + "시간 뒤에 마감돼요.</p></div>";
     html += '<div class="panel-box">';
