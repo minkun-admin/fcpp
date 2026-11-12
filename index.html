@@ -214,7 +214,9 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .res.away { white-space: nowrap; }
 .res.away, .side.away .tag { background: linear-gradient(135deg, #1B2A6B 0%, #6A3FA6 100%); color: #fff; }
 .awsub.awpur { color: var(--away-ink); }
-.awsub { display: block; color: var(--ink); font-weight: 700; }
+.awsub { display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.35em; line-height: 1.5; color: var(--ink); font-weight: 700; }
+.awsub .thumb { margin-left: 0; line-height: 1; }
+.awsub .ti, .awsub .ci { transform: translateY(-0.8px); }
 .side.away.awayW .names { color: var(--ink); font-weight: 700; }
 .seg.wide button { flex: 1; }
 
