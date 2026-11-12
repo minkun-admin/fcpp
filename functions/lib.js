@@ -41,4 +41,19 @@ function monthlyMessage(now) {
     body: "관리자 탭 > 월간 결산에서 이미지를 만들어 카톡방에 공유하세요."
   };
 }
-module.exports = { toMs: toMs, fmtDate: fmtDate, isClosed: isClosed, dueMessages: dueMessages, monthlyMessage: monthlyMessage };
+function reportMessage(key) {
+  return { title: Number(key.slice(5, 7)) + "월 결산이 완료되었습니다", body: "관리자 탭 > 월간 결산에서 이미지를 만들어 카톡방에 공유하세요." };
+}
+/* 이 투표가 "그 달 마지막 주 경기"(7일 뒤가 다음 달)이고, 그 달의 모든 투표가 마감됐으면 그 달(YYYY-MM)을 돌려줘요 */
+function reportReady(polls, pollDate, now) {
+  var p = String(pollDate).split("-");
+  if (p.length !== 3) return null;
+  var key = p[0] + "-" + p[1];
+  var next = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + 7));
+  var nextKey = next.getUTCFullYear() + "-" + String(next.getUTCMonth() + 1).padStart(2, "0");
+  if (nextKey === key) return null;
+  var inMonth = polls.filter(function (x) { return x && x.date && String(x.date).slice(0, 7) === key && Array.isArray(x.candidates); });
+  if (!inMonth.length || !inMonth.every(function (x) { return isClosed(x, now); })) return null;
+  return key;
+}
+module.exports = { toMs: toMs, fmtDate: fmtDate, isClosed: isClosed, dueMessages: dueMessages, monthlyMessage: monthlyMessage, reportMessage: reportMessage, reportReady: reportReady };

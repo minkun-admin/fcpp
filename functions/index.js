@@ -1,7 +1,7 @@
 /* 투표가 마감되면 관리자 기기(adminDevices)로만 푸시 알림을 보내요. 5분마다 확인해요. */
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
-const { dueMessages, monthlyMessage } = require("./lib");
+const { dueMessages, monthlyMessage, reportMessage, reportReady } = require("./lib");
 
 admin.initializeApp();
 
@@ -34,6 +34,9 @@ exports.notifyMonthlyReport = onSchedule(
       .where(admin.firestore.FieldPath.documentId(), "<", m.end)
       .limit(1).get();
     if (snap.empty) return;
+    const key = m.start.slice(0, 7);
+    if ((await db.doc("notices/" + key).get()).exists) return; // 마지막 경기 투표 마감 때 이미 알렸어요
+    await db.doc("notices/" + key).set({ sentAt: Date.now(), via: "monthly" });
     await pushToAdmins(db, m.title, m.body);
   }
 );
@@ -65,6 +68,13 @@ exports.notifyPollClosed = onSchedule(
         await Promise.all(dead.map((t) => db.doc("adminDevices/" + t).delete()));
       }
       await db.doc("polls/" + m.id).update({ notified: true });
+      // 그 달 마지막 주 경기의 투표까지 모두 마감되면 "결산 완료" 알림 (달마다 한 번)
+      const key = reportReady(polls, m.id, Date.now());
+      if (key && !(await db.doc("notices/" + key).get()).exists) {
+        await db.doc("notices/" + key).set({ sentAt: Date.now(), via: "poll" });
+        const rm = reportMessage(key);
+        await pushToAdmins(db, rm.title, rm.body);
+      }
     }
   }
 );
