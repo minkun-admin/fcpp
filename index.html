@@ -1583,7 +1583,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 
   /* ---------- streak & monthly report ---------- */
   function streakOf(id) {
-    var ms = allMatches(), n = 0, kind = "";
+    var ms = sortedMatches(), n = 0, kind = "";
     for (var i = ms.length - 1; i >= 0; i--) {
       var o = outcome(ms[i], id);
       if (!o) continue;
