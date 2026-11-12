@@ -1154,7 +1154,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     $("#logoutBtn").hidden = S.readOnly;
     if (S.readOnly && /login/.test(location.hash) && !S.loginAsked) { S.loginAsked = true; openLogin(); }
     var mh = $("#matchesHint");
-    if (mh) mh.innerHTML = S.readOnly ? '최근 경기부터 보여줘요. 승·패 명단과 <span style="white-space:nowrap">MOM(<span class="thumb">' + crownIcon() + '</span>)</span>·<span style="white-space:nowrap">칭찬(<span class="thumb">' + thumbIcon() + '</span>)</span>을 확인할 수 있어요.' : "최근경기부터 보여줘요. 모두 수고하셨습니다😄";
+    if (mh) mh.innerHTML = S.readOnly ? '최근 경기부터 보여줘요. 승·패 명단과 <span style="white-space:nowrap">MOM(<span class="thumb">' + crownIcon() + '</span>)</span>·<span style="white-space:nowrap">칭찬(<span class="thumb">' + thumbIcon() + '</span>)</span>을 확인할 수 있어요.' : "최근 경기부터 보여줘요. 모두 수고하셨습니다😄";
   }
 
   /* ---------- 카톡 공유 글 ---------- */
