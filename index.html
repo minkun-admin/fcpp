@@ -206,9 +206,8 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .seg button[data-awres="D"][aria-pressed="true"] { background: var(--draw); color: var(--bg); }
 .seg button[data-attend][aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .res.away { white-space: nowrap; }
-.res.awayW, .side.awayW .tag { background: var(--accent); color: var(--on-accent); }
-.res.awayL, .side.awayL .tag { background: var(--loss); color: var(--bg); }
-.res.awayD, .side.awayD .tag { background: var(--draw); color: var(--bg); }
+.res.away, .side.away .tag { background: linear-gradient(135deg, #1B2A6B 0%, #6A3FA6 100%); color: #fff; }
+.awsub { color: #8A63D2; font-weight: 700; }
 .side.away.awayW .names { color: var(--ink); font-weight: 700; }
 .seg.wide button { flex: 1; }
 
@@ -431,7 +430,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .awv { text-align: right; font-variant-numeric: tabular-nums; }
 .aws { color: var(--muted); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
 .bar i.P { background: var(--muted); }
-.bar i.T { background: var(--teamB); }
+.bar i.T { background: linear-gradient(90deg, #1B2A6B, #6A3FA6); }
 
 .recs { display: grid; gap: 0.6rem; }
 .rec, .match, .latest, .board > .row { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
@@ -572,7 +571,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       </div>
       <div>
         <span class="fl">경기 종류</span>
-        <div class="seg wide" role="group" aria-label="경기 종류"><button type="button" data-awaymode="0" aria-pressed="true">내부 경기</button><button type="button" data-awaymode="1" aria-pressed="false">원정 경기</button></div>
+        <div class="seg wide" role="group" aria-label="경기 종류"><button type="button" data-awaymode="0" aria-pressed="true">평풋</button><button type="button" data-awaymode="1" aria-pressed="false">원정</button></div>
       </div>
       <div class="awayonly">
         <span class="fl">원정 결과 (참석자 전원)</span>
@@ -685,10 +684,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function resLabel(r) { return r === "A" || r === "B" ? TEAM[r] + " 승" : "무승부"; }
 
   /* ---------- data ---------- */
-  function sortedMatches() {
+  function allMatches() {
     return S.matches.filter(function (m) { return m.date && (m.outcomes || (m.result && m.teams)); })
       .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   }
+  /* 평풋(내부) 경기만: 승점·출석·최근 경기·투표에 쓰여요. 원정은 allMatches()로만 */
+  function sortedMatches() { return allMatches().filter(function (m) { return !m.away; }); }
   function outcome(m, id) {
     if (m.outcomes) {
       var o = m.outcomes[id];
@@ -817,7 +818,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function renderMatches() {
     var box = $("#matchBody");
     if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
-    var ms = sortedMatches().slice().reverse();
+    var ms = allMatches().slice().reverse();
     if (!ms.length) { box.innerHTML = emptyBlock("아직 경기 기록이 없어요", S.readOnly ? "기록이 올라오면 여기에 보여요." : "관리자 탭에서 첫 경기를 기록해 보세요."); return; }
     box.innerHTML = '<div class="matches">' + ms.map(function (m) {
       var cnt;
@@ -877,7 +878,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     function blank() { return { g: 0, w: 0, d: 0, l: 0 }; }
     var awayN = 0;
     S.members.forEach(function (m) { st[m.id] = { uni: { A: blank(), B: blank() }, mates: {}, g: 0, w: 0, d: 0, l: 0, away: blank() }; });
-    c.ms.forEach(function (m) {
+    allMatches().forEach(function (m) {
       if (m.away && m.outcomes) {
         awayN++;
         Object.keys(st).forEach(function (id) {
@@ -950,7 +951,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
         var u = s.uni[t];
         return '<span class="mini ' + t + (u.g ? "" : " off") + '">' + UN[t] + " " + (u.g ? pct(u.w, u.g) + "%" : "–") + "</span>";
       }).join("");
-      var sub = r.att ? r.w + "승 " + r.d + "무 " + r.l + "패" : "출석한 경기가 없어요";
+      var aw = s.away, sub = r.att ? r.w + "승 " + r.d + "무 " + r.l + "패" : "출석한 경기가 없어요";
+      if (aw.g) sub += ' · <span class="awsub">원정 ' + aw.w + "승 " + aw.d + "무 " + aw.l + "패</span>";
 
       function uniBox(t, u, p) {
         if (!u.g) return '<div class="uni off"><span class="tag" style="background:var(--surface-2);color:var(--muted)">' + UN[t] + "팀</span><span class=\"sub\">입은 적 없어요</span></div>";
@@ -1581,7 +1583,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
 
   /* ---------- streak & monthly report ---------- */
   function streakOf(id) {
-    var ms = sortedMatches(), n = 0, kind = "";
+    var ms = allMatches(), n = 0, kind = "";
     for (var i = ms.length - 1; i >= 0; i--) {
       var o = outcome(ms[i], id);
       if (!o) continue;
@@ -1599,12 +1601,12 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   }
 
   function attendWinHtml(r, total, s) {
-    if (!total) return "";
+    if (!total && !(s && s.away && s.away.g)) return "";
     function row(label, n, d, cls) {
       var p = d ? Math.round(n / d * 100) : 0;
       return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>';
     }
-    var h = row("전체", r.w, r.att, "W");
+    var h = r.att ? row("평풋", r.w, r.att, "W") : "";
     if (s && s.away && s.away.g) h += row("원정", s.away.w, s.away.g, "T");
     return '<div><h3>출석 경기 승률</h3><div class="awbox">' + h + "</div></div>";
   }
@@ -1655,7 +1657,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       return { name: r.name, pts: r.pts, w: r.w, d: r.d, l: r.l, lv: lv };
     });
     var away = { g: 0, w: 0, d: 0, l: 0 };
-    ms.forEach(function (m) { if (m.away && m.outcomes) { away.g++; var ar = awayRes(m); if (ar === "W") away.w++; else if (ar === "L") away.l++; else away.d++; } });
+    allMatches().filter(function (m) { return monthKey(m.date) === key; }).forEach(function (m) { if (m.away && m.outcomes) { away.g++; var ar = awayRes(m); if (ar === "W") away.w++; else if (ar === "L") away.l++; else away.d++; } });
     var maxP = rows.reduce(function (x, r) { return Math.max(x, r.praise); }, 0);
     var perfect = ms.length >= 2 ? rows.filter(function (r) { return r.att === ms.length; }).map(function (r) { return r.name; }).sort(function (a, b) { return a.localeCompare(b, "ko"); }) : [];
     return {
