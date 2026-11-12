@@ -52,7 +52,8 @@
   --teamB-ink: #A8470A;
   --win: #17663A;
   --win-bg: #D6EEDD;
-  --away-bg: #E4D9F5;
+  --away-bg: #CDB8EE;
+  --away-fg: #4A2C8C;
   --away-ink: #7B4BC4;
   --draw: #55645A;
   --draw-bg: #E3E8E4;
@@ -85,7 +86,8 @@
     --teamB-ink: #FFA05C;
     --win: #6FD890;
     --win-bg: #1B3D29;
-    --away-bg: #3A2B5C;
+    --away-bg: #4D3A82;
+  --away-fg: #E3D6FF;
   --away-ink: #B79CF0;
     --draw: #A5B8AA;
     --draw-bg: #243228;
@@ -116,7 +118,8 @@
   --teamB-ink: #FFA05C;
   --win: #6FD890;
   --win-bg: #1B3D29;
-  --away-bg: #3A2B5C;
+  --away-bg: #4D3A82;
+  --away-fg: #E3D6FF;
   --away-ink: #B79CF0;
   --draw: #A5B8AA;
   --draw-bg: #243228;
@@ -284,7 +287,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .ch { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ch.A { background: var(--teamA); color: var(--on-teamA); }
 .ch.B { background: var(--teamB); color: var(--on-teamB); }
-.ch.away { background: var(--away-bg); }
+.ch.away { background: var(--away-bg); color: var(--away-fg); font-size: 0.8rem; }
 .ch.x { border: 1px dashed var(--line); color: var(--muted); font-weight: 400; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.7rem 0 0; color: var(--muted); font-size: 0.8rem; }
 .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
@@ -868,13 +871,13 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     var rows = c.rows.slice().sort(function (a, b) { return (b.att - a.att) || (wr[b.id] - wr[a.id]) || byName(a, b); });
     var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + cols.map(function (m) {
       return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
-        (m.away && m.outcomes ? '<span class="D">원정</span>' : m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
+        (m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
     }).join("") + "</tr>";
     var body = rows.map(function (r) {
       var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
       return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + pct + "% · " + r.att + "/" + ms.length + "</td>" + cols.map(function (m) {
         var o = outcome(m, r.id);
-        if (m.away && m.outcomes) return o ? '<td><span class="ch away" aria-label="원정 참석">&nbsp;</span></td>' : '<td><span class="ch x" aria-label="결석">–</span></td>';
+        if (m.away && m.outcomes) return o ? '<td><span class="ch away" aria-label="원정 참석">' + (o === "W" ? "승" : o === "L" ? "패" : "무") + '</span></td>' : '<td><span class="ch x" aria-label="결석">–</span></td>';
         if (!o) return '<td><span class="ch x" aria-label="결석">–</span></td>';
         var p = o === "W" ? num(S.rules.win) : o === "D" ? num(S.rules.draw) : num(S.rules.loss);
         var cls = m.outcomes ? o : m.teams[r.id];
