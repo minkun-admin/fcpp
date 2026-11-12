@@ -1256,8 +1256,8 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function voteBanner() {
     var p = curPoll();
     if (!p || !pollOpen(p) || S.vote.mine[p.id]) return "";
-    return '<button class="vbanner" type="button" data-act="tab" data-tab="vote"><span>🗳️ ' + esc(fmtShort(p.date)) + " MOM 투표 진행 중 · " +
-      leftText(tms(p.endsAt)) + '</span><span aria-hidden="true">›</span></button>';
+    return '<button class="vbanner" type="button" data-act="tab" data-tab="vote"><span>🗳️ ' + esc(fmtDate(p.date)) + " MOM 투표 진행 중.&nbsp; " +
+      leftText(tms(p.endsAt)) + ".&nbsp; 현재 " + pollVotes(p) + "/" + p.candidates.length + "명 투표" + '</span><span aria-hidden="true">›</span></button>';
   }
   async function ensureUser() {
     if (S.authReadyP) await S.authReadyP;
