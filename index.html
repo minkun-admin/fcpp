@@ -430,7 +430,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .awv { text-align: right; font-variant-numeric: tabular-nums; }
 .aws { color: var(--muted); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
 .bar i.P { background: var(--muted); }
-.bar i.T { background: linear-gradient(90deg, #1B2A6B, #6A3FA6); }
+.bar i.T { background: #7B4BC4; }
 
 .recs { display: grid; gap: 0.6rem; }
 .rec, .match, .latest, .board > .row { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
@@ -1604,10 +1604,10 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!total && !(s && s.away && s.away.g)) return "";
     function row(label, n, d, cls) {
       var p = d ? Math.round(n / d * 100) : 0;
-      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + p + '%</b></div>';
+      return '<div class="aw"><span class="awl">' + label + '</span><span class="bar"><i class="' + cls + '" style="width:' + p + '%"></i></span><b class="awv">' + (d ? p + "%" : "–") + '</b></div>';
     }
     var h = r.att ? row("평풋", r.w, r.att, "W") : "";
-    if (s && s.away && s.away.g) h += row("원정", s.away.w, s.away.g, "T");
+    h += row("원정", s && s.away ? s.away.w : 0, s && s.away ? s.away.g : 0, "T");
     return '<div><h3>출석 경기 승률</h3><div class="awbox">' + h + "</div></div>";
   }
 
