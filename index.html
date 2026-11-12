@@ -804,7 +804,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       box.innerHTML = emptyBlock("아직 멤버가 없어요", "멤버 탭에서 이름을 한 번에 추가할 수 있어요.", "members", S.readOnly ? "" : "멤버 추가하러 가기");
       return;
     }
-    var c = compute(), html = voteBanner(), last = c.ms[c.ms.length - 1];
+    var c = compute(), html = "", last = c.ms[c.ms.length - 1];
     if (last) {
       html += '<section class="latest" aria-label="최근 경기"><div class="latest-top"><span class="lbl">최근 경기</span><b class="md">' + fmtDate(last.date) +
         "</b>" + '<span class="sub">' + matchCntText(last) + '</span></div><div class="sides">' + sidesHtml(last, true) + "</div></section>";
@@ -836,7 +836,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
     var ms = allMatches().slice().reverse();
     if (!ms.length) { box.innerHTML = emptyBlock("아직 경기 기록이 없어요", S.readOnly ? "기록이 올라오면 여기에 보여요." : "관리자 탭에서 첫 경기를 기록해 보세요."); return; }
-    box.innerHTML = '<div class="matches">' + ms.map(function (m) {
+    box.innerHTML = voteBanner() + '<div class="matches">' + ms.map(function (m) {
       var cnt;
       if (m.outcomes) {
         cnt = "참석 " + Object.keys(m.outcomes).filter(function (k) { return m.outcomes[k] === "W" || m.outcomes[k] === "D" || m.outcomes[k] === "L"; }).length + "명";
@@ -1273,7 +1273,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       st.mine[p.id] = bd ? { choice: bd.choice || "?", praise: Array.isArray(bd.praise) ? bd.praise : [] } : "";
       delete st.mineErr[p.id];
     } catch (e) { st.mineErr[p.id] = (e && e.code) || "net"; }
-    st.mineBusy = false; renderVote(); renderRank();
+    st.mineBusy = false; renderVote(); renderRank(); renderMatches();
   }
   function resKey(p) { return p.id + ":" + (p.createdAt || 0); }
   function readCache() { try { return JSON.parse(localStorage.getItem("fcpp-res-v1") || "{}") || {}; } catch (e) { return {}; } }
@@ -1554,7 +1554,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       else if (c === "auth/operation-not-allowed") toast("투표 기능이 아직 준비되지 않았어요. 관리자에게 알려 주세요");
       else toast("투표하지 못했어요. 인터넷 연결을 확인해 주세요");
     }
-    st.busy = false; st.armed = false; st.pick = ""; st.praise = []; renderVote(); renderRank();
+    st.busy = false; st.armed = false; st.pick = ""; st.praise = []; renderVote(); renderRank(); renderMatches();
   }
   async function startPoll() {
     var st = S.vote, date = st.adminDate;
@@ -1597,7 +1597,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     toast((await copyText(t)) ? "복사했어요. 카톡 단톡방에 붙여 넣으세요" : "복사하지 못했어요. 위 글을 길게 눌러 직접 복사해 주세요");
   }
   setInterval(function () {
-    if (S.tab === "vote") renderVote(); else { tabBadge(); if (S.tab === "rank") renderRank(); }
+    if (S.tab === "vote") renderVote(); else { tabBadge(); if (S.tab === "rank") renderRank(); if (S.tab === "matches") renderMatches(); }
   }, 30000);
 
   /* ---------- streak & monthly report ---------- */
