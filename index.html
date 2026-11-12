@@ -274,6 +274,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .ch { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ch.A { background: var(--teamA); color: var(--on-teamA); }
 .ch.B { background: var(--teamB); color: var(--on-teamB); }
+.ch.away { background: #7B4BC4; }
 .ch.x { border: 1px dashed var(--line); color: var(--muted); font-weight: 400; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.7rem 0 0; color: var(--muted); font-size: 0.8rem; }
 .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
@@ -839,7 +840,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
   function renderAtt() {
     var box = $("#attBody");
     if (!ready()) { box.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
-    var c = compute(), ms = c.ms;
+    var c = compute(), ms = c.ms, cols = allMatches();
     if (!S.members.length || !ms.length) {
       box.innerHTML = emptyBlock("보여줄 출석 기록이 없어요", "경기를 기록하면 멤버별 출석표가 만들어져요.");
       return;
@@ -851,14 +852,15 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
       wr[r.id] = r.att ? w / r.att : 0;
     });
     var rows = c.rows.slice().sort(function (a, b) { return (b.att - a.att) || (wr[b.id] - wr[a.id]) || byName(a, b); });
-    var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + ms.map(function (m) {
+    var head = '<tr><th class="c1" scope="col">이름</th><th scope="col">출석률</th>' + cols.map(function (m) {
       return '<th scope="col"><button class="dh" type="button" data-act="edit" data-id="' + esc(m.id) + '">' + fmtShort(m.date) +
         (m.away && m.outcomes ? '<span class="D">원정</span>' : m.outcomes ? "" : '<span class="' + m.result + '">' + (m.result === "D" ? "무" : TEAM[m.result].replace("팀", "") + "승") + "</span>") + "</button></th>";
     }).join("") + "</tr>";
     var body = rows.map(function (r) {
       var pct = ms.length ? Math.round(r.att / ms.length * 100) : 0;
-      return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + pct + "% · " + r.att + "/" + ms.length + "</td>" + ms.map(function (m) {
+      return '<tr><th class="c1" scope="row">' + esc(r.name) + '</th><td class="rate">' + pct + "% · " + r.att + "/" + ms.length + "</td>" + cols.map(function (m) {
         var o = outcome(m, r.id);
+        if (m.away && m.outcomes) return o ? '<td><span class="ch away" aria-label="원정 참석"></span></td>' : '<td><span class="ch x" aria-label="결석">–</span></td>';
         if (!o) return '<td><span class="ch x" aria-label="결석">–</span></td>';
         var p = o === "W" ? num(S.rules.win) : o === "D" ? num(S.rules.draw) : num(S.rules.loss);
         var cls = m.outcomes ? o : m.teams[r.id];
