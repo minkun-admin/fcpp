@@ -1380,7 +1380,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
           }
         }
       } catch (e) { rankPart = ""; head = "🗳️ " + club + " " + fmtDate(p.date) + " MOM 투표"; }
-      return head + "\n" + rankPart + "🗳️ 이날 MOM과 칭찬하고 싶은 사람(최대 " + maxPraise(p) + "명)을 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n📱 순위 확인 · 투표하러 가기\n" + url;
+      return head + "\n" + rankPart + "🗳️ 이날 MOM과 칭찬하고 싶은 사람(최대 " + maxPraise(p) + "명)을 뽑아 주세요! (익명)\n⏰ 마감: " + fmtWhen(tms(p.endsAt)) + " (참석자 " + p.candidates.length + "명이 모두 투표하면 바로 마감)\n\n🔥 【 현재 " + pollVotes(p) + "/" + p.candidates.length + "명 투표 】 🔥\n\n📱 순위 확인 · 투표하러 가기\n" + url;
     }
     var res = S.vote.res[p.id];
     if (!res) return "";
