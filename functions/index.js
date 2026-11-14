@@ -1,16 +1,18 @@
 /* 투표가 마감되면 관리자 기기(adminDevices)로만 푸시 알림을 보내요. 5분마다 확인해요. */
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore, FieldPath } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 const { dueMessages, monthlyMessage, reportMessage, reportReady } = require("./lib");
 
-admin.initializeApp();
+initializeApp();
 
 /* 관리자 기기들로 푸시를 보내고, 만료된 토큰은 정리해요 */
 async function pushToAdmins(db, title, body) {
   const devSnap = await db.collection("adminDevices").get();
   const tokens = devSnap.docs.map((d) => d.id);
   if (!tokens.length) return;
-  const res = await admin.messaging().sendEachForMulticast({
+  const res = await getMessaging().sendEachForMulticast({
     tokens: tokens,
     data: { title: title, body: body },
     webpush: { headers: { Urgency: "high", TTL: "86400" } }
@@ -27,11 +29,11 @@ async function pushToAdmins(db, title, body) {
 exports.notifyMonthlyReport = onSchedule(
   { schedule: "0 9 1 * *", region: "asia-northeast3", timeZone: "Asia/Seoul", memory: "256MiB" },
   async () => {
-    const db = admin.firestore();
+    const db = getFirestore();
     const m = monthlyMessage(Date.now());
     const snap = await db.collection("matches")
-      .where(admin.firestore.FieldPath.documentId(), ">=", m.start)
-      .where(admin.firestore.FieldPath.documentId(), "<", m.end)
+      .where(FieldPath.documentId(), ">=", m.start)
+      .where(FieldPath.documentId(), "<", m.end)
       .limit(1).get();
     if (snap.empty) return;
     const key = m.start.slice(0, 7);
@@ -44,7 +46,7 @@ exports.notifyMonthlyReport = onSchedule(
 exports.notifyPollClosed = onSchedule(
   { schedule: "every 5 minutes", region: "asia-northeast3", timeZone: "Asia/Seoul", memory: "256MiB" },
   async () => {
-    const db = admin.firestore();
+    const db = getFirestore();
     const pollSnap = await db.collection("polls").get();
     const polls = pollSnap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
     const due = dueMessages(polls, Date.now());
@@ -55,7 +57,7 @@ exports.notifyPollClosed = onSchedule(
 
     for (const m of due) {
       if (tokens.length) {
-        const res = await admin.messaging().sendEachForMulticast({
+        const res = await getMessaging().sendEachForMulticast({
           tokens: tokens,
           data: { title: m.title, body: m.body },
           webpush: { headers: { Urgency: "high", TTL: "86400" } }
