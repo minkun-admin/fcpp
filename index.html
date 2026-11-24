@@ -470,7 +470,7 @@ label.fl { display: block; margin-bottom: 0.25rem; font-size: 0.82rem; font-weig
 .vbanner { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; width: 100%; box-sizing: border-box; margin: 0 0 0.8rem; padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--accent); background: var(--win-bg); color: var(--win); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
 .vhead { display: flex; flex-direction: column; gap: 0.15rem; margin: 0.2rem 0 0.7rem; }
 .vhead b { font-size: 1.1rem; }
-.vhead span { font-size: 0.85rem; color: var(--muted); }
+.vhead span { font-size: 1rem; font-weight: 700; color: var(--ink); line-height: 1.45; }
 .vgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin: 0.8rem 0; }
 .vopt { min-height: 48px; padding: 0.4rem 0.6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .vopt[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
@@ -1432,7 +1432,7 @@ select.vsel { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0.
     if (!p) { box.innerHTML = emptyBlock("진행 중인 투표가 없어요", "경기 결과가 올라오면 MOM 투표가 열려요."); return; }
     var open = pollOpen(p), end = tms(p.endsAt);
     var head = '<div class="vhead"><b>🗳️ ' + esc(fmtDate(p.date)) + " MOM 투표</b><span>" +
-      (open ? "마감 " + esc(fmtWhen(end)) + " · " + leftText(end) + " · " + progText(p) : allVoted(p) ? "전원 투표 완료로 마감됐어요" : "마감됐어요") + "</span></div>";
+      (open ? "마감 " + esc(fmtWhen(end)) + "<br>" + leftText(end) + " · " + progText(p) : allVoted(p) ? "전원 투표 완료로 마감됐어요" : "마감됐어요") + "</span></div>";
 
     if (open) {
       var mine = st.mine[p.id];
